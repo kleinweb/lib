@@ -1,0 +1,17 @@
+#! yaml-language-server: $schema=https://json.schemastore.org/yamllint.json
+
+# SPDX-FileCopyrightText: 2024 Temple University <kleinweb@temple.edu>
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+---
+extends: default
+
+rules:
+  line-length:
+    max: 100
+    allow-non-breakable-words: true
+    allow-non-breakable-inline-mappings: true
+
+ignore:
+  # Generated:
+  - .copier-answers.yml

@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: (C) 2024 Temple University <kleinweb@temple.edu>
+# SPDX-License-Identifier: CC0-1.0
+
+version = 1
+
+[[annotations]]
+path = [
+  "**.json",
+  "**.lock",
+  "**.properties",
+  "**.yml",
+  "**.d.ts",
+  "**/.ignore",
+  "**/.gitattributes",
+  "**/.gitignore",
+  "**/.gitkeep",
+  ".config/org_id",
+]
+SPDX-FileCopyrightText = "(C) 2024 Temple University <kleinweb@temple.edu>"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = ["**.md", "**.org", "**.txt"]
+SPDX-FileCopyrightText = "(C) 2024 Temple University <kleinweb@temple.edu>"
+SPDX-License-Identifier = "CC-BY-NC-SA-4.0"

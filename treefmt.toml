@@ -1,0 +1,75 @@
+# SPDX-FileCopyrightText: 2024 Temple University <kleinweb@temple.edu>
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+[global]
+excludes = ["**/node_modules/**", "**/vendor/**", "**/*.min.*"]
+
+[formatter.biome]
+command = "biome"
+options = [
+  "check",
+  "--write",
+  "--no-errors-on-unmatched",
+  "--files-ignore-unknown=true",
+]
+includes = [
+  "*.js",
+  "*.ts",
+  "*.mjs",
+  "*.mts",
+  "*.cjs",
+  "*.cts",
+  "*.jsx",
+  "*.tsx",
+  "*.d.ts",
+  "*.d.cts",
+  "*.d.mts",
+  "*.json",
+  "*.jsonc",
+]
+excludes = []
+
+[formatter.dos2unix]
+command = "dos2unix"
+options = ["--keepdate"]
+includes = ["*"]
+excludes = []
+
+[formatter.nixfmt]
+command = "nixfmt"
+options = []
+includes = ["*.nix"]
+excludes = []
+
+[formatter.php-cs-fixer]
+command = "composer"
+options = [
+  "php-cs-fixer",
+  "fix",
+  # Required when passing multiple paths:
+  "--config=$PRJ_ROOT/.php-cs-fixer.dist.php",
+  "--",
+]
+priority = 0
+includes = ["*.php"]
+excludes = []
+
+[formatter.phpcbf]
+command = "composer"
+options = ["phpcbf", "--"]
+priority = 1
+includes = ["*.php"]
+excludes = []
+
+[formatter.prettier]
+command = "prettier"
+options = ["--write"]
+includes = ["*.css", "*.md", "*.mdx", "*.scss", "*.yaml", "*.yml"]
+excludes = ["CHANGELOG.md"]
+
+[formatter.taplo]
+command = "taplo"
+options = ["format"]
+includes = ["*.toml"]
+excludes = []

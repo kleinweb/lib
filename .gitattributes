@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2024 Temple University <kleinweb@temple.edu>
+#
+# SPDX-License-Identifier: CC0-1.0
+
+#: <https://github.com/gitattributes/gitattributes>
+#: <https://mirrors.edge.kernel.org/pub/software/scm/git/docs/gitattributes.html>
+
+/.gitattributes export-ignore
+/.github export-ignore
