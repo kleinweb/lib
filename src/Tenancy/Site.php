@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kleinweb\Sitekit\Tenancy;
+namespace Kleinweb\Lib\Tenancy;
 
 final class Site
 {

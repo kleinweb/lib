@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kleinweb\Sitekit\Support;
+namespace Kleinweb\Lib\Support;
 
 use Illuminate\Support\ServiceProvider as ServiceProviderBase;
-use Kleinweb\Sitekit\Hooks\Traits\Hookable;
+use Kleinweb\Lib\Hooks\Traits\Hookable;
 
 /**
  * Service provider base class providing framework-specific features.

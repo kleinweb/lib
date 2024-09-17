@@ -1,11 +1,11 @@
 {
   "$schema": "https://getcomposer.org/schema.json",
-  "name": "kleinweb/kite",
+  "name": "kleinweb/lib",
   "type": "library",
   "version": "1.0.0",
   "license": "GPL-3.0-or-later",
-  "description": "The source code for Kite",
-  "homepage": "https://github.com/kleinweb/kite",
+  "description": "The source code for the Klein College standard library",
+  "homepage": "https://github.com/kleinweb/lib",
   "authors": [
     {
       "name": "Chris Montgomery",
@@ -14,7 +14,7 @@
     }
   ],
   "support": {
-    "issues": "https://github.com/kleinweb/kite/issues"
+    "issues": "https://github.com/kleinweb/lib/issues"
   },
   "repositories": [
     {
@@ -58,7 +58,7 @@
   "prefer-stable": true,
   "autoload": {
     "psr-4": {
-      "\\Kleinweb\\Kite\\": "src/"
+      "\\Kleinweb\\Lib\\": "src/"
     },
     "files": ["src/globals.php"]
   },

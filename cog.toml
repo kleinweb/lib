@@ -18,7 +18,7 @@ post_package_bump_hooks = []
 template = "remote"
 remote = "github.com"
 owner = "kleinweb"
-repository = "kite"
+repository = "lib"
 path = "CHANGELOG.md"
 authors = [
   { signature = "Chris Montgomery", username = "montchr" },

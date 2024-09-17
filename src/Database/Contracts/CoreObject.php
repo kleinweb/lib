@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace Kleinweb\Sitekit\Database\Contracts;
+namespace Kleinweb\Lib\Database\Contracts;
 
-use Kleinweb\Sitekit\Database\Models\Model;
+use Kleinweb\Lib\Database\Models\Model;
 use WP_Post;
 use WP_Term;
 use WP_User;

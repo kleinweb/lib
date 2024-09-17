@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kleinweb\Sitekit\Support;
+namespace Kleinweb\Lib\Support;
 
 use Illuminate\Support\Facades;
 use WP_Error;

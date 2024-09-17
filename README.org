@@ -1,4 +1,4 @@
-* Kite
+* Kleinweb Library
 ** Requirements
 :PROPERTIES:
 :CUSTOM_ID: requirements

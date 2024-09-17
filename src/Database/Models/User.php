@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Kleinweb\Sitekit\Database\Models;
+namespace Kleinweb\Lib\Database\Models;
 
-use Kleinweb\Sitekit\Database\Contracts\CoreObject;
-use Kleinweb\Sitekit\Support\CoreObjects;
+use Kleinweb\Lib\Database\Contracts\CoreObject;
+use Kleinweb\Lib\Support\CoreObjects;
 use Webmozart\Assert\Assert;
 use WP_User;
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kleinweb\Sitekit;
+namespace Kleinweb\Lib;
 
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Roots\Acorn\Application as RootsApplication;

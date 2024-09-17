@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Kleinweb\Sitekit\Database\Models;
+namespace Kleinweb\Lib\Database\Models;
 
 abstract class Model
 {

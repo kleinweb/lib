@@ -5,7 +5,7 @@ declare(strict_types=1);
 // We are not in camel territory here, this is WordPress core.
 // phpcs:disable Squiz.NamingConventions.ValidVariableName.NotCamelCaps
 
-namespace Kleinweb\Sitekit\Support;
+namespace Kleinweb\Lib\Support;
 
 use Webmozart\Assert\Assert;
 use WP_Post;
