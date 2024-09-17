@@ -5,9 +5,9 @@ declare(strict_types=1);
 // We are not in camel territory here, this is WordPress core.
 // phpcs:disable Squiz.NamingConventions.ValidVariableName.NotCamelCaps
 
-namespace Kleinweb\Lib\Support;
+namespace Kleinweb\Sitekit\Support;
 
-use Assert\Assertion;
+use Webmozart\Assert\Assert;
 use WP_Post;
 use WP_Post_Type;
 use WP_Query;
@@ -42,7 +42,7 @@ final class CoreGlobals
     {
         $globalQuery = $GLOBALS['wp_the_query'];
 
-        Assertion::isInstanceOf(
+        Assert::isInstanceOf(
             $globalQuery,
             WP_Query::class,
             'The WordPress global "$wp_the_query" is unusable. This request is beyond saving. Goodbye.',
@@ -66,7 +66,7 @@ final class CoreGlobals
             return null;
         }
 
-        Assertion::isInstanceOf(
+        Assert::isInstanceOf(
             $globalPost,
             WP_Post::class,
             sprintf(

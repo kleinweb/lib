@@ -1,7 +1,7 @@
 {
   "$schema": "https://getcomposer.org/schema.json",
   "name": "kleinweb/kite",
-  "type": "project",
+  "type": "library",
   "version": "1.0.0",
   "license": "GPL-3.0-or-later",
   "description": "The source code for Kite",
@@ -21,22 +21,6 @@
       "type": "composer",
       "url": "https://wpackagist.org",
       "only": ["wpackagist-plugin/*", "wpackagist-theme/*"]
-    },
-    {
-      "type": "package",
-      "package": {
-        "name": "kinsta/kinsta-mu-plugins",
-        "type": "wordpress-muplugin",
-        "version": "3.1.1",
-        "dist": {
-          "url": "https://kinsta.com/kinsta-tools/kinsta-mu-plugins.zip",
-          "type": "zip"
-        }
-      }
-    },
-    {
-      "type": "vcs",
-      "url": "https://github.com/crstauf/query-monitor-extend.git"
     }
   ],
   "require": {
@@ -73,8 +57,10 @@
   "minimum-stability": "dev",
   "prefer-stable": true,
   "autoload": {
-    "psr-4": {},
-    "files": []
+    "psr-4": {
+      "\\Kleinweb\\Kite\\": "src/"
+    },
+    "files": ["src/globals.php"]
   },
   "extra": {},
   "scripts": {
