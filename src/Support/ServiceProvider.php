@@ -20,4 +20,9 @@ abstract class ServiceProvider extends ServiceProviderBase
 
         $this->booted(fn () => $this->registerHooks());
     }
+
+    public function boot(): void
+    {
+        // NOTE: Just a placeholder for now.
+    }
 }
