@@ -1,1 +1,1 @@
-# Kleinweb Lib
+# Kleinweb Standard Library
