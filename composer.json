@@ -26,6 +26,7 @@
   "require": {
     "php": "^8.2",
     "composer/installers": "^2.2",
+    "roots/acorn": "^5.0@beta",
     "symfony/http-foundation": "^7.1",
     "webmozart/assert": "^1.11"
   },
@@ -69,6 +70,7 @@
     "phpcbf": "phpcbf --extensions=php --standard=$PRJ_ROOT/.phpcs.xml.dist",
     "phpcs": "phpcs --extensions=php --standard=$PRJ_ROOT/.phpcs.xml.dist",
     "lint": ["@phpcs", "@phpstan"],
-    "fix": ["@php-cs-fixer fix", "@phpcbf"]
+    "fix": ["@php-cs-fixer fix", "@phpcbf"],
+    "post-autoload-dump": ["Roots\\Acorn\\ComposerScripts::postAutoloadDump"]
   }
 }
