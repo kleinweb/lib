@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Kleinweb\Lib\View\Support;
 
-use Assert\Assertion;
+use Webmozart\Assert\Assert;
 
 use function get_option;
 use function sprintf;
@@ -28,12 +28,10 @@ final class Date
     public static function getSiteDateTimeFormat(): string
     {
         $dateFormat = get_option('date_format') ?: '';
-        Assertion::string($dateFormat);
-        Assertion::notEmpty($dateFormat);
+        Assert::stringNotEmpty($dateFormat);
 
         $timeFormat = get_option('time_format') ?: '';
-        Assertion::string($timeFormat);
-        Assertion::notEmpty($timeFormat);
+        Assert::stringNotEmpty($timeFormat);
 
         return sprintf('%s %s', $dateFormat, $timeFormat);
     }

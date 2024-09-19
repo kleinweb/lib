@@ -33,7 +33,7 @@ final class Application extends RootsApplication
         }
 
         $packages = $this->make(PackageManifest::class);
-        if (method_exists($packages, 'getPackage')) {
+        if ($packages instanceof PackageManifest) {
             $e->setPackage($packages->getPackage($providerName));
         }
 
