@@ -53,7 +53,7 @@
   "prefer-stable": true,
   "autoload": {
     "psr-4": {
-      "\\Kleinweb\\Lib\\": "src/"
+      "Kleinweb\\Lib\\": "src"
     },
     "files": ["src/globals.php"]
   },
