@@ -13,7 +13,5 @@ parameters:
     level: 8
     inferPrivatePropertyTypeFromConstructor: true
     paths:
-    
         - src/
-    
     tmpDir: .cache/phpstan/

@@ -31,6 +31,7 @@ use Illuminate\Support\Collection;
 use Kleinweb\Lib\Hooks\Attributes\Action;
 use Kleinweb\Lib\Hooks\Attributes\Filter;
 use ReflectionClass;
+use Webmozart\Assert\Assert;
 
 /**
  * Register all hooks on a class.
@@ -49,10 +50,13 @@ trait Hookable
             ->unique()
             ->each(
                 function (array $item) {
+                    $callable = [$this, $item['method']];
+                    Assert::isCallable($callable);
+
                     if ($item['type'] === 'action') {
-                        \add_action($item['hook'], [$this, $item['method']], $item['priority'], 999);
+                        \add_action($item['hook'], $callable, $item['priority'], 999);
                     } else {
-                        \add_filter($item['hook'], [$this, $item['method']], $item['priority'], 999);
+                        \add_filter($item['hook'], $callable, $item['priority'], 999);
                     }
                 },
             );
