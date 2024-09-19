@@ -1,5 +1,4 @@
 # SPDX-FileCopyrightText: 2024 Temple University <kleinweb@temple.edu>
-#
 # SPDX-License-Identifier: CC0-1.0
 
 # Data/logs
@@ -22,6 +21,7 @@ vendor
 # Context-specific
 .cache
 .direnv
+.idea
 .local
 .php-cs-fixer.cache
 .pre-commit-config.yaml
