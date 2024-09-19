@@ -3,16 +3,14 @@
 SPDX-FileCopyrightText: 2024 Temple University <kleinweb@temple.edu>
 SPDX-License-Identifier: CC0-1.0
 -->
-<ruleset name="KleinStdLib">
+<ruleset name="Lib">
     <description>Kleinweb Standard Library Coding Standards</description>
 
+    <file>./.php-cs-fixer.dist.php</file>
+
+    <file>./src</file>
+
     <rule ref="Kleinweb">
-        <!-- TODO(bootstrap): Uncomment if needed, delete if not: -->
-        <!-- <exclude name="PEAR.Commenting.FileComment" /> -->
-        <!-- <exclude name="SlevomatCodingStandard.ControlStructures.DisallowEmpty.DisallowedEmpty"/> -->
-        <!-- <exclude name="Squiz.Commenting.FileComment" /> -->
-        <!-- <exclude name="Squiz.NamingConventions.ValidFunctionName.NotCamelCaps"/> -->
-        <!-- <exclude name="Squiz.NamingConventions.ValidVariableName.NotCamelCaps"/> -->
-        <!-- <exclude name="Squiz.NamingConventions.ValidVariableName.StringNotCamelCaps"/> -->
+        <!-- TODO: Configure overrides -->
     </rule>
 </ruleset>

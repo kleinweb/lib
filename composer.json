@@ -2,7 +2,7 @@
   "$schema": "https://getcomposer.org/schema.json",
   "name": "kleinweb/lib",
   "type": "library",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "license": "GPL-3.0-or-later",
   "description": "The source code for the Klein College standard library",
   "homepage": "https://github.com/kleinweb/lib",
@@ -16,13 +16,6 @@
   "support": {
     "issues": "https://github.com/kleinweb/lib/issues"
   },
-  "repositories": [
-    {
-      "type": "composer",
-      "url": "https://wpackagist.org",
-      "only": ["wpackagist-plugin/*", "wpackagist-theme/*"]
-    }
-  ],
   "require": {
     "php": "^8.2",
     "composer/installers": "^2.2",

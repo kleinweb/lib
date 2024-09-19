@@ -26,6 +26,12 @@ return $config
     ])
     ->setFinder(
         PhpCsFixer\Finder::create()
-        ->in(__DIR__)
-        ->ignoreVCSIgnored(true),
+            ->in([
+                'src',
+            ])
+            ->ignoreDotFiles(false)
+            ->exclude([
+                'node_modules',
+                'vendor',
+            ])
     );

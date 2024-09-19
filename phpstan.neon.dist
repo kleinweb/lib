@@ -5,14 +5,15 @@
 includes:
     # <https://github.com/phpstan/phpstan-src/blob/master/conf/bleedingEdge.neon>
     - phar://phpstan.phar/conf/bleedingEdge.neon
+
     # Only if necessary!
     # - phpstan-baseline.neon
+
 parameters:
-    level: 9
+    level: 8
     inferPrivatePropertyTypeFromConstructor: true
     paths:
+    
         - src/
-        - .php-cs-fixer.dist.php
-        # - test/
-        # - rector.php
+    
     tmpDir: .cache/phpstan/

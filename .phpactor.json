@@ -4,20 +4,12 @@
     "**/.data/**/*",
     "/vendor/**/Tests/**/*",
     "/vendor/**/tests/**/*",
-    "/vendor/**/composer/**/*",
-    "/wp-admin/**/*",
-    "/wp-content/cache/**/*",
-    "/wp-content/languages/**/*",
-    "/wp-content/upgrade/**/*",
-    "/wp-content/uploads/**/*",
-    "/wp-includes/**/*",
-    "/wp-*.php",
-    "/xmlrpc.php"
+    "/vendor/**/composer/**/*"
   ],
   "indexer.stub_paths": [
     "%project_root%/vendor/php-stubs/acf-pro-stubs",
-    "%project_root%/vendor/php-stubs/wordpress-stubs",
-    "%project_root%/vendor/php-stubs/gravity-forms-stubs"
+    "%project_root%/vendor/php-stubs/gravity-forms-stubs",
+    "%project_root%/vendor/php-stubs/wordpress-stubs"
   ],
   "language_server_phpstan.enabled": true,
   "language_server_php_cs_fixer.enabled": false,
