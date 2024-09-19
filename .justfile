@@ -3,9 +3,6 @@
 
 ###: <https://just.systems/man/en/>
 
-set dotenv-filename := '.env'
-set dotenv-required
-
 import '.config/vars.just'
 
 mod php '.config/php'
@@ -15,10 +12,6 @@ mod reuse '.config/reuse'
 # Display a list of available tasks as the default command
 default:
   @just --choose
-
-start:
-  ddev start
-  {{ open }} {{ prj-url-local }}
 
 [group: "qa"]
 [doc: "Check for any lint or formatting issues on project files"]
