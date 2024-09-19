@@ -1,8 +1,7 @@
-# SPDX-FileCopyrightText: 2024 Temple University <kleinweb@temple.edu>
-#
+# SPDX-FileCopyrightText: (C) 2024 Temple University <kleinweb@temple.edu>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import '_common.vars.just'
+import '../vars.just'
 
 [group: "php"]
 [doc: "Rebuild the Phpactor project index"]

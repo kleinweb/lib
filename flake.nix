@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2024 Temple University <kleinweb@temple.edu>
 # SPDX-License-Identifier: GPL-3.0-or-later
 {
-  description = "Kleinweb Library";
+  description = "Kleinweb Standard Library";
   inputs = {
     nixpkgs.follows = "nixos-unstable";
     nixos-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";

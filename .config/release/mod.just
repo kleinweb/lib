@@ -1,10 +1,9 @@
-# SPDX-FileCopyrightText: 2024 Temple University <kleinweb@temple.edu>
-#
+# SPDX-FileCopyrightText: (C) 2024 Temple University <kleinweb@temple.edu>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 ## Requires: gnused, jq, moreutils
 
-import '_common.vars.just'
+import '../vars.just'
 
 wp-header-version-prefix-regexp :='(\s*)(\*\s)?Version:(\s+)'
 

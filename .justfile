@@ -3,11 +3,14 @@
 
 ###: <https://just.systems/man/en/>
 
-import '.config/just/_common.vars.just'
+set dotenv-filename := '.env'
+set dotenv-required
 
-mod php '.config/just/php.just'
-mod release'.config/just/release.just'
-mod reuse '.config/just/reuse.just'
+import '.config/vars.just'
+
+mod php '.config/php'
+mod release'.config/release'
+mod reuse '.config/reuse'
 
 # Display a list of available tasks as the default command
 default:
