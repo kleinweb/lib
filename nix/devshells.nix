@@ -39,6 +39,7 @@
         '';
         nativeBuildInputs = commonPkgs ++ [
           config.pre-commit.settings.hooks.markdownlint.package
+          config.pre-commit.settings.hooks.reuse.package
           config.pre-commit.settings.hooks.yamllint.package
 
           pkgs.dos2unix

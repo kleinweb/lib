@@ -35,7 +35,7 @@ indent_style = space
 indent_size = 4
 indent_style = space
 
-[*.{crt,pub,txt}]
+[{*.{pub,txt},.reuse/**}]
 indent_size=unset
 insert_final_newline=false
 

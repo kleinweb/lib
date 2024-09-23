@@ -5,9 +5,9 @@ declare(strict_types=1);
 /**
  * Hookable trait file.
  *
+ * SPDX-FileCopyrightText: 2020-2024  Alley <mantle@alley.com>
  * SPDX-FileCopyrightText: 2023-2024  Temple University <kleinweb@temple.edu>
- * SPDX-FileCopyrightText: 2020-2024  Alley
- * SPDX-License-Identifier: GPL-3.0-or-later.
+ * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * This program is free software: you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free Software

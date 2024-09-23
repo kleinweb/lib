@@ -3,9 +3,6 @@
 
 ###: <https://just.systems/man/en/>
 
-set dotenv-filename := '.env'
-set dotenv-required
-
 import '.config/vars.just'
 
 [group: "php"]

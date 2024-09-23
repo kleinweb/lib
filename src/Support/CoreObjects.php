@@ -1,14 +1,9 @@
 <?php
 
-/**
- * Core Object helper functions.
- *
- * SPDX-FileCopyrightText: 2023-2024 Temple University <kleinweb@temple.edu>
- * SPDX-FileCopyrightText: 2020-2023 Alley
- * SPDX-License-Identifier: GPL-3.0-or-later
- *
- * @see <https://github.com/alleyinteractive/mantle-framework/blob/3febc0d9b204b965b8f49770788159f13737510f/src/mantle/support/helpers/helpers-core-objects.php>
- */
+// SPDX-FileCopyrightText: (C) 2020-2023 Alley <mantle@alley.com>
+// SPDX-FileCopyrightText: (C) 2023-2024 Temple University <kleinweb@temple.edu>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
 
 declare(strict_types=1);
 

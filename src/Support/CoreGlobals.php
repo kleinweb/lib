@@ -1,5 +1,10 @@
 <?php
 
+// SPDX-FileCopyrightText: (C) 2020-2023 Alley <mantle@alley.com>
+// SPDX-FileCopyrightText: (C) 2023-2024 Temple University <kleinweb@temple.edu>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+
 declare(strict_types=1);
 
 // We are not in camel territory here, this is WordPress core.
