@@ -3,11 +3,21 @@
 
 ###: <https://just.systems/man/en/>
 
+set dotenv-filename := '.env'
+set dotenv-required
+
 import '.config/vars.just'
 
+[group: "php"]
 mod php '.config/php'
-mod release'.config/release'
+
+[group: "release"]
+mod release '.config/release'
+
+[group: "licensing"]
 mod reuse '.config/reuse'
+
+php-lint-project-cmd := "nix run 'github:kleinweb/beams#php-lint-project'"
 
 # Display a list of available tasks as the default command
 default:
@@ -18,7 +28,7 @@ default:
 check:
   dotenv-linter check
   biome check {{prj-root}}
-  nix run '{{prj-root}}#php-lint-project'
+  {{php-lint-project-cmd}}
   composer php-cs-fixer -- check
   composer phpcs
   composer phpstan
@@ -27,7 +37,7 @@ check:
 [doc: "Check for (non-stylistic) linting issues on project files"]
 lint:
   biome lint {{prj-root}}
-  nix run '{{prj-root}}#php-lint-project'
+  {{php-lint-project-cmd}}
   composer lint
 
 [group: "qa"]

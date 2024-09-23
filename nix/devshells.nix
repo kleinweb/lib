@@ -12,9 +12,10 @@
     }:
     let
       commonPkgs = [
+        inputs'.beams.packages.php-lint
+
         pkgs.php
         pkgs.php.packages.composer
-        config.packages.php-lint
 
         pkgs.biome
         pkgs.dotenv-linter

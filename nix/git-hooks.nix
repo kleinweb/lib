@@ -1,10 +1,13 @@
 # SPDX-FileCopyrightText: 2024 Temple University <kleinweb@temple.edu>
-#
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 {
   perSystem =
-    { config, pkgs, ... }:
+    {
+      config,
+      inputs',
+      pkgs,
+      ...
+    }:
     {
       pre-commit.settings = {
         hooks = {
@@ -26,7 +29,7 @@
           php-lint = {
             enable = true;
             description = "Check PHP files for syntax errors";
-            package = config.packages.php-lint;
+            package = inputs'.beams.packages.php-lint;
             entry = "php-lint";
             types = [
               "file"
@@ -35,9 +38,14 @@
             # Other PHP linters will likely fail when there are syntax errors.
             fail_fast = true;
           };
+          reuse = {
+            enable = true;
+            stages = [ "pre-push" ];
+          };
           treefmt.enable = true;
           yamllint.enable = true;
         };
+
         default_stages = [
           "pre-commit"
           "pre-push"

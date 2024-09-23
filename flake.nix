@@ -3,13 +3,14 @@
 {
   description = "Kleinweb Standard Library";
   inputs = {
-    nixpkgs.follows = "nixos-unstable";
-    nixos-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nixpkgs-trunk.url = "github:NixOS/nixpkgs/master";
+    beams.url = "github:kleinweb/beams";
 
     flake-parts.url = "github:hercules-ci/flake-parts";
-
     pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
+
+    nixos-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs-trunk.url = "github:NixOS/nixpkgs/master";
+    nixpkgs.follows = "nixos-unstable";
   };
 
   outputs =
@@ -23,9 +24,6 @@
 
       imports = [
         inputs.pre-commit-hooks.flakeModule
-
-        ./nix/packages
-
         ./nix/devshells.nix
         ./nix/git-hooks.nix
       ];

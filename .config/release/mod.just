@@ -15,13 +15,11 @@ wp-header-version-prefix-regexp :='(\s*)(\*\s)?Version:(\s+)'
 #   cog bump --auto
 #   git push --follow-tags origin staging:staging
 
-[group: "release"]
 [confirm: "Prepare and tag release?"]
 [doc: "Prepare and tag a release based on semantic commits"]
 release:
   cog bump --auto
 
-[group: "release"]
 [doc: "Bump version numbers across manifest files"]
 [no-cd]
 bump old new:
