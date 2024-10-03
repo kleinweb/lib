@@ -22,7 +22,7 @@ abstract class ServiceProvider extends ServiceProviderBase
     {
         parent::register();
 
-        $this->booted(fn () => $this->registerHooks());
+        $this->booted($this->registerHooks(...));
     }
 
     public function boot(): void
