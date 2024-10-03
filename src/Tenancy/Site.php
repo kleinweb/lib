@@ -34,12 +34,6 @@ final class Site
         return self::url($siteId)->getHost();
     }
 
-    /** @deprecated Use {@link \Kleinweb\Lib\Tenancy\Site::host()}. */
-    public static function fqdn(?int $siteId = null): ?string
-    {
-        return self::host($siteId);
-    }
-
     public static function isPrimaryFqdn(?string $url = null): bool
     {
         return str_contains($url ?? self::url()->toString(), network_home_url());
