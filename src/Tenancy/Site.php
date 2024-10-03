@@ -34,7 +34,7 @@ final class Site
         return self::url($siteId)->getHost();
     }
 
-    public static function isPrimaryFqdn(?string $url = null): bool
+    public static function isPrimaryHost(?string $url = null): bool
     {
         return str_contains($url ?? self::url()->toString(), network_home_url());
     }
