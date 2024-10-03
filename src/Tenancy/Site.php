@@ -36,6 +36,8 @@ final class Site
 
     public static function isPrimaryHost(?string $url = null): bool
     {
-        return str_contains($url ?? self::url()->toString(), network_home_url());
+        $homeUrl = self::url()->toString();
+
+        return str_contains($url ?? $homeUrl, network_home_url());
     }
 }
