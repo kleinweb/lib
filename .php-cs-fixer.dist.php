@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-// SPDX-FileCopyrightText: 2024 Temple University <kleinweb@temple.edu>
-// SPDX-License-Identifier: CC0-1.0
-
 /*
  * This document has been generated with
  * https://mlocati.github.io/php-cs-fixer-configurator/#version:3.58.1|configurator
