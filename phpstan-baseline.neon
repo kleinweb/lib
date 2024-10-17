@@ -1,0 +1,6 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Parameter \\#1 \\$string of static method Illuminate\\\\Support\\\\Str\\:\\:of\\(\\) expects string, Illuminate\\\\Support\\\\Stringable\\|string given\\.$#"
+			count: 1
+			path: src/Package/PackageServiceProvider.php

@@ -3,11 +3,10 @@
 # SPDX-License-Identifier: CC0-1.0
 
 includes:
+    - phpstan-baseline.neon
+
     # <https://github.com/phpstan/phpstan-src/blob/master/conf/bleedingEdge.neon>
     - phar://phpstan.phar/conf/bleedingEdge.neon
-
-    # Only if necessary!
-    # - phpstan-baseline.neon
 
 parameters:
     level: 8
