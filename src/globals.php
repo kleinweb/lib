@@ -7,8 +7,10 @@
 declare(strict_types=1);
 
 // phpcs:disable Squiz.NamingConventions.ValidFunctionName.NotCamelCaps
+
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Container\BindingResolutionException;
+use Illuminate\Contracts\Routing\UrlGenerator as UrlGeneratorContract;
 use Illuminate\Foundation\Application;
 
 /**
@@ -83,7 +85,28 @@ function resource_path(string $path = ''): string
 }
 
 /**
+ * Generate a url for the application.
+ *
+ * @return ($path is null ? \Illuminate\Contracts\Routing\UrlGenerator : string)
+ *
+ * @throws BindingResolutionException
+ */
+function url(
+    ?string $path = null,
+    mixed $parameters = [],
+    ?bool $secure = null,
+): string|UrlGeneratorContract {
+    if (is_null($path)) {
+        return app(UrlGeneratorContract::class);
+    }
+
+    return app(UrlGeneratorContract::class)->to($path, $parameters, $secure);
+}
+
+/**
  * Get the database path.
+ *
+ * @throws BindingResolutionException
  */
 function database_path(string $path = ''): string
 {
