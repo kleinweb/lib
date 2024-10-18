@@ -12,8 +12,8 @@ namespace Kleinweb\Lib\Package;
 use Carbon\Carbon;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\Facades\View;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use Kleinweb\Lib\Support\ServiceProvider;
 use ReflectionClass;
 use Kleinweb\Lib\Package\Exceptions\InvalidPackage;
 use ReflectionException;
@@ -27,8 +27,9 @@ abstract class PackageServiceProvider extends ServiceProvider
 
     /**
      * @throws InvalidPackage
+     * @throws ReflectionException
      */
-    public function register()
+    public function register(): void
     {
         parent::register();
 
@@ -59,8 +60,10 @@ abstract class PackageServiceProvider extends ServiceProvider
     /**
      * @throws BindingResolutionException
      */
-    public function boot(): static
+    public function boot(): void
     {
+        parent::boot();
+
         $this->bootingPackage();
 
         $langPath = 'vendor/' . $this->package->shortName();
@@ -177,10 +180,11 @@ abstract class PackageServiceProvider extends ServiceProvider
         }
 
         $this->packageBooted();
-
-        return $this;
     }
 
+    /**
+     * @throws BindingResolutionException
+     */
     public static function generateMigrationName(string $migrationFileName, Carbon $now): string
     {
         $migrationsPath = 'migrations/' . dirname($migrationFileName) . '/';
