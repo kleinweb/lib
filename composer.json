@@ -44,6 +44,7 @@
       "alleyinteractive/composer-wordpress-autoloader": true,
       "ramsey/composer-repl": true
     },
+    "lock": false,
     "preferred-install": {
       "*": "dist"
     },
