@@ -10,14 +10,56 @@ namespace Kleinweb\Lib;
 
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Roots\Acorn\Application as RootsApplication;
+use Illuminate\Foundation\PackageManifest as FoundationPackageManifest;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\ServiceProvider;
 use Roots\Acorn\Exceptions\SkipProviderException;
+use Roots\Acorn\Filesystem\Filesystem;
 use Roots\Acorn\PackageManifest;
 use Throwable;
 
 final class Application extends RootsApplication
 {
+    /**
+     * Register the package manifest.
+     *
+     * @see https://github.com/roots/acorn/issues/410
+     *
+     * @return void
+     */
+    protected function registerPackageManifest()
+    {
+        $this->singleton(FoundationPackageManifest::class, function () {
+            $files = new Filesystem();
+
+            $composerPaths = collect(get_option('active_plugins'))
+                ->map(static fn ($plugin) => WP_PLUGIN_DIR . DIRECTORY_SEPARATOR . dirname($plugin))
+                ->merge([
+                    $this->basePath(),
+                    // HACK: Override upstream assumption about distance between
+                    // `composer.json` and content directory to match our
+                    // project structure.
+                    ABSPATH,
+                    get_template_directory(),
+                    get_stylesheet_directory(),
+                ])
+                ->map(static fn ($path) => rtrim($files->normalizePath($path), '/'))
+                ->unique()
+                ->filter(
+                    static fn ($path) => @$files->isFile("{$path}/vendor/composer/installed.json")
+                        && @$files->isFile("{$path}/composer.json"),
+                )->all();
+
+            return new PackageManifest(
+                $files,
+                $composerPaths,
+                $this->getCachedPackagesPath(),
+            );
+        });
+
+        $this->alias(FoundationPackageManifest::class, PackageManifest::class);
+    }
+
     /**
      * Skip booting service provider and log error.
      *
