@@ -8,13 +8,51 @@ declare(strict_types=1);
 
 namespace Kleinweb\Lib\Support;
 
+use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Str;
+use League\Uri\Components\HierarchicalPath;
 use League\Uri\Components\Host;
 use League\Uri\Components\Path;
+use League\Uri\Contracts\UriInterface;
 use League\Uri\Uri;
+use Webmozart\Assert\Assert;
+
+use function home_url;
+use function is_multisite;
+use function network_home_url;
 
 final class Url
 {
+    /**
+     * Generate a URL for a filesystem path relative to the webroot.
+     *
+     * @param string $path filesystem path, either absolute or relative to webroot
+     *
+     * @throws BindingResolutionException
+     */
+    public static function fromFilesystemPath(string $path): UriInterface
+    {
+        $uri = Uri::new(is_multisite() ? network_home_url() : home_url());
+        $path = HierarchicalPath::new($path)
+            ->withoutDotSegments();
+
+        if (!$path->isAbsolute()) {
+            // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
+            throw new \League\Uri\Exceptions\SyntaxError('Target path must be absolute: ' . $path->value());
+        }
+
+        Assert::stringNotEmpty($path->value());
+
+        // Strip the dirname common to webroot and target.
+        $relativePath = Str::after($path->value(), \app()->webRoot());
+
+        // A filesystem path in the web root is an absolute URI path.
+        $uriPath = Path::new($relativePath)->withLeadingSlash();
+
+        return $uri->withPath($uriPath);
+    }
+
     /**
      * Determine whether the provided URI shares the same RFC3986 Host
      * as the currently-active request.
