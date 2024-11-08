@@ -9,6 +9,7 @@ declare(strict_types=1);
 namespace Kleinweb\Lib;
 
 use Illuminate\Contracts\Debug\ExceptionHandler;
+use Illuminate\Support\Facades\Config;
 use Roots\Acorn\Application as RootsApplication;
 use Illuminate\Foundation\PackageManifest as FoundationPackageManifest;
 use Illuminate\Contracts\Container\BindingResolutionException;
@@ -20,6 +21,11 @@ use Throwable;
 
 final class Application extends RootsApplication
 {
+    public function webRoot(): string
+    {
+        return Config::string('app.web_root') ?: $this->appPath;
+    }
+
     /**
      * Register the package manifest.
      *
