@@ -32,8 +32,12 @@ final class Application extends RootsApplication
         $this->singleton(FoundationPackageManifest::class, function () {
             $files = new Filesystem();
 
-            $composerPaths = collect(get_option('active_plugins'))
+            /** @var array<int, string> $activePlugins */
+            $activePlugins = get_option('active_plugins');
+
+            $composerPaths = collect($activePlugins)
                 ->map(static fn ($plugin) => WP_PLUGIN_DIR . DIRECTORY_SEPARATOR . dirname($plugin))
+                /* @phpstan-ignore argument.type (Preserve upstream usage) */
                 ->merge([
                     $this->basePath(),
                     // HACK: Override upstream assumption about distance between
