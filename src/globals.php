@@ -11,7 +11,7 @@ declare(strict_types=1);
 use Illuminate\Container\Container;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Contracts\Routing\UrlGenerator as UrlGeneratorContract;
-use Illuminate\Foundation\Application;
+use Kleinweb\Lib\Application;
 
 /**
  * Get the available container instance.
