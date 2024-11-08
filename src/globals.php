@@ -112,3 +112,13 @@ function database_path(string $path = ''): string
 {
     return app()->databasePath($path);
 }
+
+/**
+ * Get the path to the storage folder.
+ *
+ * @throws BindingResolutionException
+ */
+function storage_path(string $path = ''): string
+{
+    return app()->storagePath($path);
+}
