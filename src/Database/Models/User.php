@@ -9,11 +9,11 @@ declare(strict_types=1);
 namespace Kleinweb\Lib\Database\Models;
 
 use Kleinweb\Lib\Database\Contracts\CoreObject;
-use Kleinweb\Lib\Support\CoreObjects;
 use Webmozart\Assert\Assert;
 use WP_User;
 
 use function is_int;
+use function Kleinweb\Lib\Support\getUser;
 
 /** @phpstan-consistent-constructor */
 final class User extends Model implements CoreObject
@@ -110,13 +110,11 @@ final class User extends Model implements CoreObject
     /**
      * Find a user model by ID or core object.
      *
-     * @param int|WP_User $identifier user identifier
+     * @param int|WP_User $user user identifier
      */
-    public static function find($identifier): ?static
+    public static function find($user): ?static
     {
-        $user = is_int($identifier)
-            ? CoreObjects::getUser($identifier)
-            : $identifier;
+        $user = is_int($user) ? getUser($user) : $user;
 
         if (!$user) {
             return null;
@@ -135,7 +133,7 @@ final class User extends Model implements CoreObject
     {
         $user = ($existing instanceof WP_User)
             ? $existing
-            : CoreObjects::getUser($existing);
+            : getUser($existing);
         Assert::isInstanceOf($user, WP_User::class);
         $id = $user->ID;
         if (!isset(self::$booted[$id])) {
