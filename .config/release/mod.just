@@ -23,7 +23,6 @@ release:
 [doc: "Bump version numbers across manifest files"]
 [no-cd]
 bump old new:
-  @just release::_bump-json {{new}} {{ join(prj-root, "composer.json") }}
   @for file in `rg '^{{wp-header-version-prefix-regexp}}([[:alnum:]\.-]+)$' \
     --files-with-matches {{prj-root}}`; do \
     just release::_bump-wp-header {{old}} {{new}} $file; \
