@@ -7,6 +7,8 @@
 
 declare(strict_types=1);
 
+// phpcs:disable SlevomatCodingStandard.Files.LineLength.LineTooLong
+
 namespace Kleinweb\Lib\Package;
 
 use Carbon\Carbon;
@@ -46,7 +48,10 @@ abstract class PackageServiceProvider extends ServiceProvider
         }
 
         foreach ($this->package->configFileNames as $configFileName) {
-            $this->mergeConfigFrom($this->package->basePath("/../config/{$configFileName}.php"), $configFileName);
+            $this->mergeConfigFrom(
+                $this->package->basePath("/../config/{$configFileName}.php"),
+                $configFileName,
+            );
         }
 
         $this->packageRegistered();

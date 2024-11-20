@@ -50,6 +50,7 @@ final class CoreGlobals
         Assert::isInstanceOf(
             $globalQuery,
             WP_Query::class,
+            // phpcs:ignore SlevomatCodingStandard.Files.LineLength.LineTooLong
             'The WordPress global "$wp_the_query" is unusable. This request is beyond saving. Goodbye.',
         );
 
@@ -75,6 +76,7 @@ final class CoreGlobals
             $globalPost,
             WP_Post::class,
             sprintf(
+                // phpcs:ignore SlevomatCodingStandard.Files.LineLength.LineTooLong
                 'The WordPress global "$post" is not of the expected type. Expected "WP_Post", got "%s".',
                 gettype($globalPost),
             ),

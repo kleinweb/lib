@@ -247,7 +247,10 @@ final class Package
      */
     public function hasCommands(...$commandClassNames): Package
     {
-        $this->commands = array_merge($this->commands, collect($commandClassNames)->flatten()->toArray());
+        $this->commands = array_merge(
+            $this->commands,
+            collect($commandClassNames)->flatten()->toArray(),
+        );
 
         return $this;
     }
@@ -293,7 +296,10 @@ final class Package
      */
     public function hasRoutes(...$routeFileNames): Package
     {
-        $this->routeFileNames = array_merge($this->routeFileNames, collect($routeFileNames)->flatten()->toArray());
+        $this->routeFileNames = array_merge(
+            $this->routeFileNames,
+            collect($routeFileNames)->flatten()->toArray(),
+        );
 
         return $this;
     }

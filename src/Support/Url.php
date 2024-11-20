@@ -15,6 +15,7 @@ use League\Uri\Components\HierarchicalPath;
 use League\Uri\Components\Host;
 use League\Uri\Components\Path;
 use League\Uri\Contracts\UriInterface;
+use League\Uri\Exceptions\SyntaxError as UriSyntaxError;
 use League\Uri\Uri;
 use Webmozart\Assert\Assert;
 
@@ -39,7 +40,7 @@ final class Url
 
         if (!$path->isAbsolute()) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
-            throw new \League\Uri\Exceptions\SyntaxError('Target path must be absolute: ' . $path->value());
+            throw new UriSyntaxError('Target path must be absolute: ' . $path->value());
         }
 
         Assert::stringNotEmpty($path->value());

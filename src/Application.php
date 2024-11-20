@@ -81,9 +81,11 @@ final class Application extends RootsApplication
 
         if (! $e instanceof SkipProviderException) {
             $error = $e::class;
+            // phpcs:disable SlevomatCodingStandard.Files.LineLength.LineTooLong
             $message = [
                 BindingResolutionException::class => "Skipping provider [{$providerName}] because it requires a dependency that cannot be found.",
             ][$error] ?? "Skipping provider [{$providerName}] because it encountered an error [{$error}]: {$e->getMessage()}";
+            // phpcs:enable SlevomatCodingStandard.Files.LineLength.LineTooLong
 
             $e = new SkipProviderException($message, 0, $e);
         }
