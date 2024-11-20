@@ -19,7 +19,6 @@
   "require": {
     "php": "^8.2",
     "archtechx/enums": "^1.1",
-    "composer/installers": "^2.2",
     "league/uri": "^7.0",
     "league/uri-components": "^7.0",
     "nesbot/carbon": "^3.8",
@@ -33,7 +32,6 @@
     "phpstan/extension-installer": "^1.3",
     "phpstan/phpstan-deprecation-rules": "^1.2",
     "phpstan/phpstan-webmozart-assert": "^1.2",
-    "ramsey/composer-repl": "^1.5",
     "roave/security-advisories": "dev-latest",
     "slevomat/coding-standard": "^8.15",
     "squizlabs/php_codesniffer": "^3.7.1",
@@ -41,18 +39,15 @@
   },
   "config": {
     "allow-plugins": {
-      "composer/installers": true,
       "dealerdirect/phpcodesniffer-composer-installer": true,
       "phpstan/extension-installer": true,
-      "alleyinteractive/composer-wordpress-autoloader": true,
-      "ramsey/composer-repl": true
+      "alleyinteractive/composer-wordpress-autoloader": true
     },
     "lock": false,
     "preferred-install": {
       "*": "dist"
     },
-    "sort-packages": true,
-    "vendor-dir": "vendor"
+    "sort-packages": true
   },
   "minimum-stability": "dev",
   "prefer-stable": true,
