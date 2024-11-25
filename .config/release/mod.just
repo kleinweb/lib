@@ -17,8 +17,9 @@ wp-header-version-prefix-regexp :='(\s*)(\*\s)?Version:(\s+)'
 
 [confirm: "Prepare and tag release?"]
 [doc: "Prepare and tag a release based on semantic commits"]
-release:
-  cog bump --auto
+[no-cd]
+release *ARGS='--auto':
+  cog bump {{ARGS}}
 
 [doc: "Bump version numbers across manifest files"]
 [no-cd]
