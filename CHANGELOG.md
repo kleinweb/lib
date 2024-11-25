@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.2.2](https://github.com/kleinweb/lib/compare/ae44a2cfbf3ee823126877de071ec7fa404d32ad..0.2.2) - 2024-11-25
+#### Bug Fixes
+- **(just|release)** accept args override - ([ae44a2c](https://github.com/kleinweb/lib/commit/ae44a2cfbf3ee823126877de071ec7fa404d32ad)) - [@montchr](https://github.com/montchr)
+
+- - -
+
 ## [0.2.0](https://github.com/kleinweb/lib/compare/050afda6cb37efe78c9d9cd1a7a24fd297caa4d1..0.2.0) - 2024-11-20
 #### Bug Fixes
 - **(prj)** use correct just task to bump version - ([f58090e](https://github.com/kleinweb/lib/commit/f58090ea3823b1d3a5dfa1538197838562812de4)) - [@montchr](https://github.com/montchr)
