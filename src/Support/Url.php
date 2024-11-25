@@ -43,10 +43,15 @@ final class Url
             throw new UriSyntaxError('Target path must be absolute: ' . $path->value());
         }
 
+        $webRoot = \app()->webRoot();
+        $webRoot = HierarchicalPath::new($webRoot)
+            ->withoutDotSegments();
+
         Assert::stringNotEmpty($path->value());
+        Assert::stringNotEmpty($webRoot->value());
 
         // Strip the dirname common to webroot and target.
-        $relativePath = Str::after($path->value(), \app()->webRoot());
+        $relativePath = Str::after($path->value(), $webRoot->value());
 
         // A filesystem path in the web root is an absolute URI path.
         $uriPath = Path::new($relativePath)->withLeadingSlash();
