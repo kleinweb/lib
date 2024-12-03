@@ -11,7 +11,6 @@ namespace Kleinweb\Lib\Support;
 use Illuminate\Contracts\Container\BindingResolutionException;
 use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Str;
-use League\Uri\Components\Domain;
 use League\Uri\Components\HierarchicalPath;
 use League\Uri\Components\Host;
 use League\Uri\Components\Path;
@@ -83,9 +82,8 @@ final class Url
 
     public static function isKinstaDomain(string|Uri $uri): bool
     {
-        $uri = Uri::new($uri);
-        $domain = Domain::new($uri)->value();
+        $host = Uri::new($uri)->getHost();
 
-        return $domain && Str::endsWith($domain, 'kinsta.cloud');
+        return $host && Str::endsWith($host, 'kinsta.cloud');
     }
 }
