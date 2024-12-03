@@ -8,6 +8,7 @@ declare(strict_types=1);
 
 namespace Kleinweb\Lib\Tenancy;
 
+use Kleinweb\Lib\Support\Url;
 use League\Uri\Uri;
 
 use function get_bloginfo;
@@ -39,5 +40,10 @@ final class Site
         $homeUrl = self::url()->toString();
 
         return str_contains($url ?? $homeUrl, network_home_url());
+    }
+
+    public static function isTempDomain(): bool
+    {
+        return Url::isKinstaDomain(self::url());
     }
 }
