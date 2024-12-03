@@ -2,6 +2,16 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.2.3](https://github.com/kleinweb/lib/compare/4622db2a646e308185f7b32f7b2353c8f81fbe5c..0.2.3) - 2024-12-03
+#### Bug Fixes
+- simplify `Url::isKinstaDomain()` - ([056b1c2](https://github.com/kleinweb/lib/commit/056b1c2d511da689d4ddba20bbb3c99e2359e3a3)) - [@montchr](https://github.com/montchr)
+#### Features
+- functions to determine whether site is kinsta domain - ([4622db2](https://github.com/kleinweb/lib/commit/4622db2a646e308185f7b32f7b2353c8f81fbe5c)) - [@montchr](https://github.com/montchr)
+#### Miscellaneous Chores
+- **(version)** 0.2.3-rc.1 - ([55336cd](https://github.com/kleinweb/lib/commit/55336cdfa623b40de4279ecbc5185bd33e891ccd)) - [@montchr](https://github.com/montchr)
+
+- - -
+
 ## [0.2.3-rc.1](https://github.com/kleinweb/lib/compare/4622db2a646e308185f7b32f7b2353c8f81fbe5c..0.2.3-rc.1) - 2024-12-03
 #### Features
 - functions to determine whether site is kinsta domain - ([4622db2](https://github.com/kleinweb/lib/commit/4622db2a646e308185f7b32f7b2353c8f81fbe5c)) - [@montchr](https://github.com/montchr)
