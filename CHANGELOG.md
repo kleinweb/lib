@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.2.3-rc.1](https://github.com/kleinweb/lib/compare/4622db2a646e308185f7b32f7b2353c8f81fbe5c..0.2.3-rc.1) - 2024-12-03
+#### Features
+- functions to determine whether site is kinsta domain - ([4622db2](https://github.com/kleinweb/lib/commit/4622db2a646e308185f7b32f7b2353c8f81fbe5c)) - [@montchr](https://github.com/montchr)
+
+- - -
+
 ## [0.2.2](https://github.com/kleinweb/lib/compare/ae44a2cfbf3ee823126877de071ec7fa404d32ad..0.2.2) - 2024-11-25
 #### Bug Fixes
 - **(just|release)** accept args override - ([ae44a2c](https://github.com/kleinweb/lib/commit/ae44a2cfbf3ee823126877de071ec7fa404d32ad)) - [@montchr](https://github.com/montchr)
