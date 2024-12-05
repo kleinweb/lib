@@ -64,6 +64,18 @@ function config_path(string $path = ''): string
     return app()->configPath($path);
 }
 
+
+/**
+ * Get the database path.
+ *
+ * @throws BindingResolutionException
+ */
+function database_path(string $path = ''): string
+{
+    return app()->databasePath($path);
+}
+
+
 /**
  * Get the path to the public folder.
  *
@@ -85,6 +97,16 @@ function resource_path(string $path = ''): string
 }
 
 /**
+ * Get the path to the storage folder.
+ *
+ * @throws BindingResolutionException
+ */
+function storage_path(string $path = ''): string
+{
+    return app()->storagePath($path);
+}
+
+/**
  * Generate a url for the application.
  *
  * @return ($path is null ? \Illuminate\Contracts\Routing\UrlGenerator : string)
@@ -101,24 +123,4 @@ function url(
     }
 
     return app(UrlGeneratorContract::class)->to($path, $parameters, $secure);
-}
-
-/**
- * Get the database path.
- *
- * @throws BindingResolutionException
- */
-function database_path(string $path = ''): string
-{
-    return app()->databasePath($path);
-}
-
-/**
- * Get the path to the storage folder.
- *
- * @throws BindingResolutionException
- */
-function storage_path(string $path = ''): string
-{
-    return app()->storagePath($path);
 }
