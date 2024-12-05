@@ -54,7 +54,7 @@
     "psr-4": {
       "Kleinweb\\Lib\\": "src"
     },
-    "files": ["src/globals.php"]
+    "files": ["src/helpers.php"]
   },
   "extra": {},
   "scripts": {
