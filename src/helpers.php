@@ -64,7 +64,6 @@ function config_path(string $path = ''): string
     return app()->configPath($path);
 }
 
-
 /**
  * Get the database path.
  *
@@ -74,7 +73,6 @@ function database_path(string $path = ''): string
 {
     return app()->databasePath($path);
 }
-
 
 /**
  * Get the path to the public folder.
@@ -109,7 +107,7 @@ function storage_path(string $path = ''): string
 /**
  * Generate a url for the application.
  *
- * @return ($path is null ? \Illuminate\Contracts\Routing\UrlGenerator : string)
+ * @return ($path is null ? UrlGeneratorContract : string)
  *
  * @throws BindingResolutionException
  */

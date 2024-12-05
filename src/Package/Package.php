@@ -49,7 +49,7 @@ final class Package
     public array $commands = [];
 
     /**
-     * @var \Kleinweb\Lib\Package\Commands\InstallCommand[]|class-string[]
+     * @var InstallCommand[]|class-string[]
      */
     public array $consoleCommands = [];
 
