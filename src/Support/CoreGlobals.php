@@ -22,6 +22,7 @@ use WP_User;
 use function get_queried_object;
 use function gettype;
 use function sprintf;
+use function wp_get_current_user;
 
 /**
  * Helper function for safely reading from WordPress core global variables.
@@ -108,5 +109,24 @@ final class CoreGlobals
     public static function queried(): WP_Post|WP_Post_Type|WP_Term|WP_User|null
     {
         return get_queried_object();
+    }
+
+    /**
+     * Get the currently-authenticated user.
+     *
+     * WordPress creates a bogus {@link WP_User} instance with `ID => 0`, even
+     * for unauthenticated requests.  Instead of that insanity, this function
+     * returns null when the global user has `ID => 0`.
+     *
+     * @see {@link wp_get_current_user()}
+     */
+    public static function user(): ?WP_User
+    {
+        $user = wp_get_current_user();
+        if ($user->ID === 0) {
+            return null;
+        }
+
+        return $user;
     }
 }
