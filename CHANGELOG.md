@@ -2,6 +2,19 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.3.0](https://github.com/kleinweb/lib/compare/0555e26ca29d5f6b30700ca7bbdc0f24a716a9d7..0.3.0) - 2024-12-06
+#### Bug Fixes
+- restore `CoreObjects` class for autoloading - ([a702066](https://github.com/kleinweb/lib/commit/a702066d4935679fc5afb5647f77576e03cea336)) - [@montchr](https://github.com/montchr)
+#### Features
+- add function to get currently-authenticated user - ([0474562](https://github.com/kleinweb/lib/commit/047456200614224133dc1ef69f986a684f2ec787)) - [@montchr](https://github.com/montchr)
+#### Miscellaneous Chores
+- fmt - ([a94b4c1](https://github.com/kleinweb/lib/commit/a94b4c199a32c5757ec27981fb90fd1e952bc3ed)) - [@montchr](https://github.com/montchr)
+#### Refactoring
+- **(helpers)** rename to `helpers.php` for framework consistency - ([4e2c9e8](https://github.com/kleinweb/lib/commit/4e2c9e810b1b89e8e70f8492e09c90682874aca2)) - [@montchr](https://github.com/montchr)
+- **(helpers)** alphabetize - ([0555e26](https://github.com/kleinweb/lib/commit/0555e26ca29d5f6b30700ca7bbdc0f24a716a9d7)) - [@montchr](https://github.com/montchr)
+
+- - -
+
 ## [0.2.3](https://github.com/kleinweb/lib/compare/4622db2a646e308185f7b32f7b2353c8f81fbe5c..0.2.3) - 2024-12-03
 #### Bug Fixes
 - simplify `Url::isKinstaDomain()` - ([056b1c2](https://github.com/kleinweb/lib/commit/056b1c2d511da689d4ddba20bbb3c99e2359e3a3)) - [@montchr](https://github.com/montchr)
