@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.4.0](https://github.com/kleinweb/lib/compare/5d98930220ece9029f246de1727afb733ee40853..0.4.0) - 2025-02-13
+#### Features
+- extend `SageServiceProvider` with `Hookable` trait - ([5d98930](https://github.com/kleinweb/lib/commit/5d98930220ece9029f246de1727afb733ee40853)) - [@montchr](https://github.com/montchr)
+
+- - -
+
 ## [0.3.0](https://github.com/kleinweb/lib/compare/0555e26ca29d5f6b30700ca7bbdc0f24a716a9d7..0.3.0) - 2024-12-06
 #### Bug Fixes
 - restore `CoreObjects` class for autoloading - ([a702066](https://github.com/kleinweb/lib/commit/a702066d4935679fc5afb5647f77576e03cea336)) - [@montchr](https://github.com/montchr)
