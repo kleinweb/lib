@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.4.1](https://github.com/kleinweb/lib/compare/6993a1381afdb979cacc939379c2902648d3ff60..0.4.1) - 2025-02-17
+#### Bug Fixes
+- **(helpers)** add missing `config()` helper - ([6993a13](https://github.com/kleinweb/lib/commit/6993a1381afdb979cacc939379c2902648d3ff60)) - [@montchr](https://github.com/montchr)
+
+- - -
+
 ## [0.4.0](https://github.com/kleinweb/lib/compare/5d98930220ece9029f246de1727afb733ee40853..0.4.0) - 2025-02-13
 #### Features
 - extend `SageServiceProvider` with `Hookable` trait - ([5d98930](https://github.com/kleinweb/lib/commit/5d98930220ece9029f246de1727afb733ee40853)) - [@montchr](https://github.com/montchr)
