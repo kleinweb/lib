@@ -4,7 +4,6 @@
 // SPDX-FileCopyrightText: (C) spatie
 // SPDX-License-Identifier: GPL-3.0-or-later OR MIT
 
-
 declare(strict_types=1);
 
 // phpcs:disable SlevomatCodingStandard.Files.LineLength.LineTooLong
