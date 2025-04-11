@@ -90,9 +90,7 @@ final class Application extends RootsApplication
         }
 
         $packages = $this->make(PackageManifest::class);
-        if ($packages instanceof PackageManifest) {
-            $e->setPackage($packages->getPackage($providerName));
-        }
+        $e->setPackage($packages->getPackage($providerName));
 
         $this->make(ExceptionHandler::class)->report($e);
 
