@@ -2,6 +2,17 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.5.0](https://github.com/kleinweb/lib/compare/91706fcbb601883d49b09ede10288b8d847a3212..0.5.0) - 2025-04-11
+#### Bug Fixes
+- redundant instanceof check - ([5fe273c](https://github.com/kleinweb/lib/commit/5fe273cfe2bc1b9bdb7958fe3e547c18045f3ce4)) - [@montchr](https://github.com/montchr)
+#### Features
+- **(site)** add function to get `orig_host` site metadata - ([0c2d8d0](https://github.com/kleinweb/lib/commit/0c2d8d0215222ad375d1295b93378a65c908d716)) - [@montchr](https://github.com/montchr)
+- add support for 'migration' environment type - ([91706fc](https://github.com/kleinweb/lib/commit/91706fcbb601883d49b09ede10288b8d847a3212)) - [@montchr](https://github.com/montchr)
+#### Miscellaneous Chores
+- fmt - ([fa9eed7](https://github.com/kleinweb/lib/commit/fa9eed719d1a84fa8fefbb199b627d17a59c8a3d)) - [@montchr](https://github.com/montchr)
+
+- - -
+
 ## [0.4.1](https://github.com/kleinweb/lib/compare/6993a1381afdb979cacc939379c2902648d3ff60..0.4.1) - 2025-02-17
 #### Bug Fixes
 - **(helpers)** add missing `config()` helper - ([6993a13](https://github.com/kleinweb/lib/commit/6993a1381afdb979cacc939379c2902648d3ff60)) - [@montchr](https://github.com/montchr)
