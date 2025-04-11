@@ -1,8 +1,7 @@
 <?php
 
-// SPDX-FileCopyrightText: (C) 2024 Temple University <kleinweb@temple.edu>
+// SPDX-FileCopyrightText: (C) 2024-2025 Temple University <kleinweb@temple.edu>
 // SPDX-License-Identifier: GPL-3.0-or-later
-
 
 declare(strict_types=1);
 
@@ -10,6 +9,7 @@ namespace Kleinweb\Lib\Tenancy;
 
 use Kleinweb\Lib\Support\Url;
 use League\Uri\Uri;
+use League\Uri\Components\Domain;
 
 use function get_bloginfo;
 
@@ -33,6 +33,18 @@ final class Site
     public static function host(?int $siteId = null): ?string
     {
         return self::url($siteId)->getHost();
+    }
+
+    public static function originalHost(?int $siteId = null): ?string
+    {
+        if (!is_multisite()) {
+            return null;
+        }
+
+        $siteId ??= get_current_blog_id();
+        $domain = get_site_meta($siteId, 'orig_host', single: true);
+
+        return $domain ? Domain::new($domain)->toString() : null;
     }
 
     public static function isPrimaryHost(?string $url = null): bool
