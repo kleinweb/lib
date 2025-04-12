@@ -2,6 +2,19 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.6.0](https://github.com/kleinweb/lib/compare/83c739e1154d11e42b896fb7dabe7fc5f8966c70..0.6.0) - 2025-04-12
+#### Bug Fixes
+- **(site)** `isPrimaryHost()` must support subdomains - ([6bb8dfd](https://github.com/kleinweb/lib/commit/6bb8dfda508275d0936f5b83f80f20cde88415a1)) - [@montchr](https://github.com/montchr)
+#### Features
+- add base `AppServiceProvider` class - ([42d3ffa](https://github.com/kleinweb/lib/commit/42d3ffacc124a474a6df93b85b756edb4df463a9)) - [@montchr](https://github.com/montchr)
+- add command to delete dead attachments - ([6f04be5](https://github.com/kleinweb/lib/commit/6f04be58c06a688944979c81d14f471a1f83d437)) - [@montchr](https://github.com/montchr)
+- add command to demap multisite domains - ([83c739e](https://github.com/kleinweb/lib/commit/83c739e1154d11e42b896fb7dabe7fc5f8966c70)) - [@montchr](https://github.com/montchr)
+#### Miscellaneous Chores
+- reuse - ([5633a9b](https://github.com/kleinweb/lib/commit/5633a9bcbf76cb1a9acf69bdbad02e86f21a577a)) - [@montchr](https://github.com/montchr)
+- phpactor: don't look for unused stubs - ([d07c5b2](https://github.com/kleinweb/lib/commit/d07c5b29896691d2ab1e057d29c74f443b2d18a5)) - [@montchr](https://github.com/montchr)
+
+- - -
+
 ## [0.5.0](https://github.com/kleinweb/lib/compare/91706fcbb601883d49b09ede10288b8d847a3212..0.5.0) - 2025-04-11
 #### Bug Fixes
 - redundant instanceof check - ([5fe273c](https://github.com/kleinweb/lib/commit/5fe273cfe2bc1b9bdb7958fe3e547c18045f3ce4)) - [@montchr](https://github.com/montchr)
