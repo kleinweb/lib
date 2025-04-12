@@ -47,11 +47,12 @@ final class Site
         return $domain ? Domain::new($domain)->toString() : null;
     }
 
-    public static function isPrimaryHost(?string $url = null): bool
+    public static function isPrimaryHost(?int $siteId = null): bool
     {
-        $homeUrl = self::url()->toString();
+        $host = Site::host($siteId);
+        $primaryHost = Site::host(get_main_site_id());
 
-        return str_contains($url ?? $homeUrl, network_home_url());
+        return is_multisite() ? $host === $primaryHost : true;
     }
 
     public static function isTempDomain(): bool
