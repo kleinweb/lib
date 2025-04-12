@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.6.1](https://github.com/kleinweb/lib/compare/53dcb9b726b1af9f6a409e77c676cb2f2742fadd..0.6.1) - 2025-04-12
+#### Bug Fixes
+- `AppServiceProvider` must be abstract - ([53dcb9b](https://github.com/kleinweb/lib/commit/53dcb9b726b1af9f6a409e77c676cb2f2742fadd)) - [@montchr](https://github.com/montchr)
+
+- - -
+
 ## [0.6.0](https://github.com/kleinweb/lib/compare/83c739e1154d11e42b896fb7dabe7fc5f8966c70..0.6.0) - 2025-04-12
 #### Bug Fixes
 - **(site)** `isPrimaryHost()` must support subdomains - ([6bb8dfd](https://github.com/kleinweb/lib/commit/6bb8dfda508275d0936f5b83f80f20cde88415a1)) - [@montchr](https://github.com/montchr)
