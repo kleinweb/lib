@@ -11,7 +11,7 @@ use Kleinweb\Lib\Console\Commands\Attachment\DeleteDead as DeleteDeadAttachments
 use Kleinweb\Lib\Console\Commands\Tenancy\DemapDomains;
 use Kleinweb\Lib\Support\ServiceProvider as ServiceProviderBase;
 
-final class AppServiceProvider extends ServiceProviderBase
+abstract class AppServiceProvider extends ServiceProviderBase
 {
     /**
      * Register any application services.
