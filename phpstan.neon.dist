@@ -11,4 +11,6 @@ parameters:
     inferPrivatePropertyTypeFromConstructor: true
     paths:
         - src/
+    scanDirectories:
+        - wp-content/plugins/simple-history/
     tmpDir: .cache/phpstan/
