@@ -29,7 +29,7 @@
   },
   "require-dev": {
     "friendsofphp/php-cs-fixer": "^3.59",
-    "kleinweb/php-coding-standards": "^0.6.0",
+    "kleinweb/php-coding-standards": "^0.7.0",
     "php-stubs/wp-cli-stubs": "^2.11",
     "phpstan/extension-installer": "^1.3",
     "phpstan/phpstan-deprecation-rules": "^1.2",
