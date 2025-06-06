@@ -245,6 +245,8 @@ abstract class PackageServiceProvider extends ServiceProvider
 
     public function packageView(?string $namespace): ?string
     {
-        return is_null($namespace) ? $this->package->shortName() : $this->package->viewNamespace;
+        return ($namespace === null)
+            ? $this->package->shortName()
+            : $this->package->viewNamespace;
     }
 }

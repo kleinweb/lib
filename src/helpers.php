@@ -26,7 +26,7 @@ use Kleinweb\Lib\Application;
  */
 function app(?string $abstract = null, array $parameters = [])
 {
-    if (is_null($abstract)) {
+    if ($abstract === null) {
         return Container::getInstance();
     }
 
@@ -65,7 +65,7 @@ function base_path(string $path = ''): string
  */
 function config($key = null, mixed $default = null)
 {
-    if (is_null($key)) {
+    if ($key === null) {
         return app('config');
     }
 
@@ -138,7 +138,7 @@ function url(
     mixed $parameters = [],
     ?bool $secure = null,
 ): string|UrlGeneratorContract {
-    if (is_null($path)) {
+    if ($path === null) {
         return app(UrlGeneratorContract::class);
     }
 
