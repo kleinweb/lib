@@ -1,0 +1,30 @@
+<?php
+
+// SPDX-FileCopyrightText: (C) 2023-2025 Alley <info@alley.com>
+// SPDX-FileCopyrightText: (C) 2025 Temple University <kleinweb@temple.edu>
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+declare(strict_types=1);
+
+namespace Kleinweb\Lib\Types;
+
+use WP_Post;
+use WP_Query;
+
+/**
+ * Describes an object that contains a single query for posts.
+ */
+interface PostQuery extends PostIds
+{
+    /**
+     * Query object.
+     */
+    public function queryObject(): WP_Query;
+
+    /**
+     * Found post objects.
+     *
+     * @return WP_Post[]
+     */
+    public function postObjects(): array;
+}
