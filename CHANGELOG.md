@@ -2,6 +2,23 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [0.7.0-rc.1](https://github.com/kleinweb/lib/compare/22717f5569ba247554b3822dc7b89d3437992008..0.7.0-rc.1) - 2025-06-11
+#### Bug Fixes
+- remove boot method from abstract service provider - ([7a24ccd](https://github.com/kleinweb/lib/commit/7a24ccd48b467ad98a1556e77ea41c0f307814d6)) - [@montchr](https://github.com/montchr)
+- remove redundant parent method override - ([b7964fa](https://github.com/kleinweb/lib/commit/b7964fafc10f57fdebe275b7bb0da45ada5c9bd5)) - [@montchr](https://github.com/montchr)
+- replace usages of forbidden functions - ([4e0872f](https://github.com/kleinweb/lib/commit/4e0872ff37f2ce6ffed9f65f6d9e442f8506fa68)) - [@montchr](https://github.com/montchr)
+- remove override of `Roots\Acorn\Application::skipProvider()` - ([a6fab83](https://github.com/kleinweb/lib/commit/a6fab8338bae016093e594645d42eb583c659d28)) - [@montchr](https://github.com/montchr)
+#### Features
+- **(log)** add simple-history plugin monolog handler - ([c3431c2](https://github.com/kleinweb/lib/commit/c3431c2c7d2b47d7b15840bf9d65ab87e4121f2d)) - [@montchr](https://github.com/montchr)
+- add `MultisiteOnly` exception - ([105559c](https://github.com/kleinweb/lib/commit/105559c068e8e6f12b10c2d7c3518c5779fd2fbf)) - [@montchr](https://github.com/montchr)
+#### Miscellaneous Chores
+- **(deps)** update dependency kleinweb/php-coding-standards to ^0.7.0 - ([22717f5](https://github.com/kleinweb/lib/commit/22717f5569ba247554b3822dc7b89d3437992008)) - renovate[bot]
+- **(dev)** increase phpactor phpstan memory limit - ([1d2e06c](https://github.com/kleinweb/lib/commit/1d2e06c9e1a0fc8068c325265de8a294302e106f)) - [@montchr](https://github.com/montchr)
+- **(reuse)** update copyright year - ([f83b26c](https://github.com/kleinweb/lib/commit/f83b26c3544c9ebc84970a1ecae4fe61f8ebceef)) - [@montchr](https://github.com/montchr)
+- phpstan 2.0 support - ([79f2f3e](https://github.com/kleinweb/lib/commit/79f2f3eb3db828df415a4f4aad6494d81707e1e5)) - [@montchr](https://github.com/montchr)
+
+- - -
+
 ## [0.6.1](https://github.com/kleinweb/lib/compare/53dcb9b726b1af9f6a409e77c676cb2f2742fadd..0.6.1) - 2025-04-12
 #### Bug Fixes
 - `AppServiceProvider` must be abstract - ([53dcb9b](https://github.com/kleinweb/lib/commit/53dcb9b726b1af9f6a409e77c676cb2f2742fadd)) - [@montchr](https://github.com/montchr)
