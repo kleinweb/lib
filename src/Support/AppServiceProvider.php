@@ -13,14 +13,6 @@ use Kleinweb\Lib\Support\ServiceProvider as ServiceProviderBase;
 
 abstract class AppServiceProvider extends ServiceProviderBase
 {
-    /**
-     * Register any application services.
-     */
-    public function register(): void
-    {
-        parent::register();
-    }
-
     public function boot(): void
     {
         if (!$this->app->runningInConsole()) {
