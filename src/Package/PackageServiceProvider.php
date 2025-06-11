@@ -66,8 +66,6 @@ abstract class PackageServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        parent::boot();
-
         $this->bootingPackage();
 
         $langPath = 'vendor/' . $this->package->shortName();
