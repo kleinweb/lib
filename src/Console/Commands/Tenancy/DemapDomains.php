@@ -144,8 +144,8 @@ final class DemapDomains extends Command
                     ],
                 ]);
             } else {
-                $wpCmd =
-                    match (constant('WP_ENV')) {
+                $wpCmd
+                    = match (constant('WP_ENV')) {
                         Environment::LOCAL => 'ddev wp ',
                         default => 'wp @' . constant('WP_ENV'),
                     };

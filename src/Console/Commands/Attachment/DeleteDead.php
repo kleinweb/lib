@@ -58,8 +58,8 @@ final class DeleteDead extends Command
 
         $bulkTask = new Bulk_Task(
             'attachment-delete-dead',
-            $dryRun ? null :
-                new ProgressBar(
+            $dryRun ? null
+                : new ProgressBar(
                     'Bulk Task: attachment_delete_dead',
                 ),
         );
