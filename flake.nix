@@ -36,9 +36,6 @@
             overlays = [
               (_final: prev: {
                 just = inputs'.nixpkgs-trunk.legacyPackages.just;
-                nixfmt = prev.nixfmt-rfc-style;
-                php = prev.php82;
-                treefmt = prev.treefmt2;
               })
             ];
           };
