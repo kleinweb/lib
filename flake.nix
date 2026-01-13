@@ -36,7 +36,7 @@
             overlays = [
               (final: prev: {
                 just = inputs'.nixpkgs-trunk.legacyPackages.just;
-                php = final.php82;
+                php = final.php83;
               })
             ];
           };

@@ -9,11 +9,11 @@ namespace Kleinweb\Lib\Support;
 
 final class Environment
 {
-    public const PRODUCTION = 'production';
-    public const MIGRATION = 'migration';
-    public const STAGING = 'staging';
-    public const DEVELOPMENT = 'development';
-    public const LOCAL = 'local';
+    public const string PRODUCTION = 'production';
+    public const string MIGRATION = 'migration';
+    public const string STAGING = 'staging';
+    public const string DEVELOPMENT = 'development';
+    public const string LOCAL = 'local';
 
     public static function isProduction(): bool
     {

@@ -175,7 +175,6 @@ final class InstallCommand extends Command
         }
 
         $providerName = Str::replace('/', '\\', $providerName);
-        Assert::string($providerName);
 
         $class = '\\Providers\\' . $providerName . '::class';
 
