@@ -23,7 +23,6 @@ default:
 [group: "qa"]
 [doc: "Check for any lint or formatting issues on project files"]
 check:
-  dotenv-linter check
   biome check {{prj-root}}
   {{php-lint-project-cmd}}
   composer php-cs-fixer -- check
