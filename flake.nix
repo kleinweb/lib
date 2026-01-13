@@ -34,8 +34,9 @@
           _module.args.pkgs = import inputs.nixpkgs {
             inherit system;
             overlays = [
-              (_final: prev: {
+              (final: prev: {
                 just = inputs'.nixpkgs-trunk.legacyPackages.just;
+                php = final.php82;
               })
             ];
           };
