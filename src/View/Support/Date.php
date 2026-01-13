@@ -23,7 +23,7 @@ final class Date
      *
      * @see https://dev.mysql.com/doc/refman/8.0/en/datetime.html
      */
-    public const WP_DATETIME_FORMAT = 'Y-m-d H:i:s';
+    public const string WP_DATETIME_FORMAT = 'Y-m-d H:i:s';
 
     /**
      * Get the datetime format as defined by site settings.
