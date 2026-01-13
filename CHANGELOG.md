@@ -2,6 +2,16 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [1.0.0](https://github.com/kleinweb/lib/compare/90055a953e5c74b7b06e241c9589bf3f03fe1274..1.0.0) - 2026-01-13
+#### Bug Fixes
+- ![BREAKING](https://img.shields.io/badge/BREAKING-red) drop support for php 8.2 - ([4f03ade](https://github.com/kleinweb/lib/commit/4f03adeafe63d4d17eb0ebdc3ff06eade914a310)) - chris montgomery
+#### Miscellaneous Chores
+- (**license**) update copyright year to include 2026 - ([5e8336b](https://github.com/kleinweb/lib/commit/5e8336b435d18e6da18d129fd96a5ffde7010c34)) - chris montgomery
+- (**reuse**) annotate missing - ([90055a9](https://github.com/kleinweb/lib/commit/90055a953e5c74b7b06e241c9589bf3f03fe1274)) - chris montgomery
+- update deps - ([59fe5c5](https://github.com/kleinweb/lib/commit/59fe5c50f17c9b2e15c9f782fb9d601275953edb)) - chris montgomery
+
+- - -
+
 ## [0.7.0](https://github.com/kleinweb/lib/compare/0.7.0-rc.1..0.7.0) - 2026-01-13
 #### Features
 - add Plugin class - ([4f715b6](https://github.com/kleinweb/lib/commit/4f715b6e61303695e15da21f01cf134910c3165e)) - [@montchr](https://github.com/montchr)
