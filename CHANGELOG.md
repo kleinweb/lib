@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [1.1.0](https://github.com/kleinweb/lib/compare/75bc8644fcb2b1e81afcf9b670fd4cc1b75509e4..1.1.0) - 2026-01-13
+#### Features
+- prevent upload of known audio or video filetypes - ([75bc864](https://github.com/kleinweb/lib/commit/75bc8644fcb2b1e81afcf9b670fd4cc1b75509e4)) - chris montgomery
+
+- - -
+
 ## [1.0.0](https://github.com/kleinweb/lib/compare/90055a953e5c74b7b06e241c9589bf3f03fe1274..1.0.0) - 2026-01-13
 #### Bug Fixes
 - ![BREAKING](https://img.shields.io/badge/BREAKING-red) drop support for php 8.2 - ([4f03ade](https://github.com/kleinweb/lib/commit/4f03adeafe63d4d17eb0ebdc3ff06eade914a310)) - chris montgomery
