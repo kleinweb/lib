@@ -2,6 +2,14 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [1.1.1](https://github.com/kleinweb/lib/compare/6a2e5266d18c86c49581ada4025af5887ac9a35d..1.1.1) - 2026-01-14
+#### Bug Fixes
+- add `preprod` to environment enum - ([050565f](https://github.com/kleinweb/lib/commit/050565fdb8054f93a15f032943fcbe980bd20d9b)) - chris montgomery
+#### Miscellaneous Chores
+- (**deps**) update dependency kleinweb/php-coding-standards to ^0.8.0 - ([6a2e526](https://github.com/kleinweb/lib/commit/6a2e5266d18c86c49581ada4025af5887ac9a35d)) - renovate[bot]
+
+- - -
+
 ## [1.1.0](https://github.com/kleinweb/lib/compare/75bc8644fcb2b1e81afcf9b670fd4cc1b75509e4..1.1.0) - 2026-01-13
 #### Features
 - prevent upload of known audio or video filetypes - ([75bc864](https://github.com/kleinweb/lib/commit/75bc8644fcb2b1e81afcf9b670fd4cc1b75509e4)) - chris montgomery
