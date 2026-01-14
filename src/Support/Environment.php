@@ -11,6 +11,7 @@ final class Environment
 {
     public const string PRODUCTION = 'production';
     public const string MIGRATION = 'migration';
+    public const string PREPROD = 'preprod';
     public const string STAGING = 'staging';
     public const string DEVELOPMENT = 'development';
     public const string LOCAL = 'local';
