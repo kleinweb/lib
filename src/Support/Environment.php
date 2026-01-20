@@ -19,8 +19,8 @@ final class Environment
     public static function isProduction(): bool
     {
         return defined('WP_ENV')
-            ? constant('WP_ENV')
-            : self::PRODUCTION;
+            ? constant('WP_ENV') === self::PRODUCTION
+            : false;
     }
 
     public static function isMigration(): bool
