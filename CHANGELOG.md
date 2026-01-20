@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [1.1.3](https://github.com/kleinweb/lib/compare/26c610de51e5c94cb8dba0552ead278b8b658a20..1.1.3) - 2026-01-20
+#### Bug Fixes
+- `Environment::isProduction()` must return bool - ([26c610d](https://github.com/kleinweb/lib/commit/26c610de51e5c94cb8dba0552ead278b8b658a20)) - chris montgomery
+
+- - -
+
 ## [1.1.2](https://github.com/kleinweb/lib/compare/f397a75c26684b2e7b9920af5afbbe1a2cbb2f13..1.1.2) - 2026-01-20
 #### Bug Fixes
 - check `isProduction()` via `WP_ENV` comparison - ([f397a75](https://github.com/kleinweb/lib/commit/f397a75c26684b2e7b9920af5afbbe1a2cbb2f13)) - chris montgomery
