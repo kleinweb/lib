@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [1.1.2](https://github.com/kleinweb/lib/compare/f397a75c26684b2e7b9920af5afbbe1a2cbb2f13..1.1.2) - 2026-01-20
+#### Bug Fixes
+- check `isProduction()` via `WP_ENV` comparison - ([f397a75](https://github.com/kleinweb/lib/commit/f397a75c26684b2e7b9920af5afbbe1a2cbb2f13)) - chris montgomery
+
+- - -
+
 ## [1.1.1](https://github.com/kleinweb/lib/compare/6a2e5266d18c86c49581ada4025af5887ac9a35d..1.1.1) - 2026-01-14
 #### Bug Fixes
 - add `preprod` to environment enum - ([050565f](https://github.com/kleinweb/lib/commit/050565fdb8054f93a15f032943fcbe980bd20d9b)) - chris montgomery
