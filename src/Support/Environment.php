@@ -18,7 +18,9 @@ final class Environment
 
     public static function isProduction(): bool
     {
-        return wp_get_environment_type() === self::PRODUCTION;
+        return defined('WP_ENV')
+            ? constant('WP_ENV')
+            : self::PRODUCTION;
     }
 
     public static function isMigration(): bool
