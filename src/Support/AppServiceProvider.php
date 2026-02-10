@@ -9,6 +9,7 @@ namespace Kleinweb\Lib\Support;
 
 use Kleinweb\Lib\Console\Commands\Attachment\DeleteDead as DeleteDeadAttachments;
 use Kleinweb\Lib\Console\Commands\Tenancy\DemapDomains;
+use Kleinweb\Lib\Hooks\Attributes\Action;
 use Kleinweb\Lib\Hooks\Attributes\Filter;
 use Kleinweb\Lib\Support\ServiceProvider as ServiceProviderBase;
 
@@ -24,6 +25,26 @@ abstract class AppServiceProvider extends ServiceProviderBase
             DeleteDeadAttachments::class,
             DemapDomains::class,
         ]);
+    }
+
+    #[Action('wp_dashboard_setup')]
+    public function dashboardCleanup(): void
+    {
+        // phpcs:disable Squiz.NamingConventions.ValidVariableName.NotCamelCaps -- Necessary.
+
+        global $wp_meta_boxes;
+
+        // "Activity" -- Redundant alongside Simple History.
+        unset($wp_meta_boxes['dashboard']['normal']['core']['dashboard_activity']);
+
+        // "Quick Draft" -- Useless anti-feature.  May cause 'Auto
+        // Draft' creation (and notification email) on initial login.
+        unset($wp_meta_boxes['dashboard']['side']['core']['dashboard_quick_press']);
+
+        // "WordPress Events and News" -- Spam.
+        unset($wp_meta_boxes['dashboard']['side']['core']['dashboard_primary']);
+
+        // phpcs:enable Squiz.NamingConventions.ValidVariableName.NotCamelCaps
     }
 
     /**
