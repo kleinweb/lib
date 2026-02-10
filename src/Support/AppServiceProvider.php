@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace Kleinweb\Lib\Support;
 
+use Illuminate\Support\Facades\Request;
 use Kleinweb\Lib\Console\Commands\Attachment\DeleteDead as DeleteDeadAttachments;
 use Kleinweb\Lib\Console\Commands\Tenancy\DemapDomains;
 use Kleinweb\Lib\Hooks\Attributes\Action;
@@ -89,5 +90,38 @@ abstract class AppServiceProvider extends ServiceProviderBase
         );
 
         return $mimes;
+    }
+
+    /**
+     * @param array<string, mixed> $data
+     */
+    #[Action('wp_mail_succeeded')]
+    public function logSentMail($data): void
+    {
+        if (!function_exists('SimpleLogger')) {
+            return;
+        }
+
+        $eventName = 'wp_mail_succeeded';
+
+        $context = [
+            '_message_key' => $eventName,
+            '_server_request_method' => Request::method(),
+            // https://simple-history.com/docs/logging-api/#automatic-grouping-of-messages
+            '_occasionsID' => $eventName,
+            'recipient' => implode(',', $data['to']),
+            'subject' => $data['subject'],
+            // NOTE: For security/privacy reasons, avoid storing
+            // message content!  For example: a user with access to
+            // Simple History could intercept a requested password
+            // reset URL and change the recipient user's password.
+            // 'message' => $data['message'],
+        ];
+
+        if (Request::userAgent()) {
+            $context['_user_agent'] = Request::userAgent();
+        }
+
+        \SimpleLogger()->info('Mail sent to {recipient} with subject "{subject}"', $context);
     }
 }
