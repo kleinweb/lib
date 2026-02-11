@@ -9,7 +9,6 @@ namespace Kleinweb\Lib\Console\Commands\Attachment;
 
 use Alley\WP_Bulk_Task\Bulk_Task;
 use Alley\WP_Bulk_Task\Bulk_Task_Side_Effects;
-use Alley\WP_Bulk_Task\Progress\PHP_CLI_Progress_Bar as ProgressBar;
 use Illuminate\Console\Command;
 
 /**
@@ -56,13 +55,7 @@ final class DeleteDead extends Command
 
         $dryRunPrefix = $dryRun ? '[DRY-RUN]' : '';
 
-        $bulkTask = new Bulk_Task(
-            'attachment-delete-dead',
-            $dryRun ? null
-                : new ProgressBar(
-                    'Bulk Task: attachment_delete_dead',
-                ),
-        );
+        $bulkTask = new Bulk_Task('attachment-delete-dead');
 
         if ($rewind) {
             $bulkTask->cursor->reset();
