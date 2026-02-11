@@ -19,7 +19,7 @@ final readonly class Plugin
     public string $path;
     public string $url;
 
-    final protected function __construct(
+    final private function __construct(
         public string $file,
         public string $version,
     ) {
