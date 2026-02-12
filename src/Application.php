@@ -37,7 +37,6 @@ final class Application extends RootsApplication
 
             $composerPaths = collect($activePlugins)
                 ->map(static fn ($plugin) => WP_PLUGIN_DIR . DIRECTORY_SEPARATOR . dirname($plugin))
-                /* @phpstan-ignore argument.type (Preserve upstream usage) */
                 ->merge([
                     $this->basePath(),
                     // HACK: Override upstream assumption about distance between
