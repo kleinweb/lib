@@ -8,6 +8,7 @@ declare(strict_types=1);
 namespace Kleinweb\Lib\Console\Commands\Tenancy;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Process;
 use Kleinweb\Lib\Support\Environment;
 use League\Uri\Components\Domain;
 use League\Uri\Components\Path;
@@ -128,29 +129,19 @@ final class DemapDomains extends Command
 
             $this->line("{$dryRunPrefix} Changed site {$id} URL from <{$oldUri}> to <{$newUri}>");
 
-            $replacementCommand = "search-replace {$oldUri} {$newUri}";
+            $cmdEnv = (constant('WP_ENV') === Environment::LOCAL) ? 'ddev' : constant('WP_ENV');
+            $wpArgs = sprintf(
+                'search-replace --network --skip-columns=guid %s %s %s',
+                $dryRun ? '--dry-run' : '',
+                $oldUri,
+                $newUri,
+            );
+
             if ($replace) {
                 $this->line("{$dryRunPrefix} Performing database replacements for URL change...");
-
-                WP_CLI::runcommand($replacementCommand, [
-                    'return' => false,
-                    // Reuse the current process for access to database connection.
-                    'launch' => false,
-                    'exit_error' => false,
-                    'command_args' => [
-                        '--network',
-                        '--skip-columns=guid',
-                        $dryRun ? '--dry-run' : '',
-                    ],
-                ]);
+                $result = Process::run("wp {$wpArgs}");
             } else {
-                $wpCmd
-                    = match (constant('WP_ENV')) {
-                        Environment::LOCAL => 'ddev wp ',
-                        default => 'wp @' . constant('WP_ENV'),
-                    };
-                // phpcs:ignore SlevomatCodingStandard.Files.LineLength.LineTooLong
-                $followupCommands[] = $wpCmd . $replacementCommand . ' --network --skip-columns=guid ' . ($dryRun ? '--dry-run' : '');
+                $followupCommands[] = sprintf('wp @%s %s', $cmdEnv, $wpArgs);
             }
         }
 
