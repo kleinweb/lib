@@ -2,6 +2,21 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [1.2.0](https://github.com/kleinweb/lib/compare/197bb5604bf8e84ddf573ae35ff7778f048ac276..1.2.0) - 2026-02-17
+#### Features
+- (**logging|mail**) record successful email sending events with Simple History - ([7f544c4](https://github.com/kleinweb/lib/commit/7f544c4e43abbf7d4ac70be5c4a5a84c4b89da51)) - chris montgomery
+- clean up dashboard noise - ([197bb56](https://github.com/kleinweb/lib/commit/197bb5604bf8e84ddf573ae35ff7778f048ac276)) - chris montgomery
+#### Bug Fixes
+- (**console|media**) drop usage of WP-CLI progress bar - ([018b23a](https://github.com/kleinweb/lib/commit/018b23a6cc037e5efab41709b350822aad73ac0f)) - chris montgomery
+- (**console|tenancy**) drop dependency on WP-CLI classes - ([03824c8](https://github.com/kleinweb/lib/commit/03824c8673c5d394072ec30c5f828960bcc60a8e)) - chris montgomery
+- (**deps**) remove wp-cli as composer dependency - ([f648b79](https://github.com/kleinweb/lib/commit/f648b799cce6971ccae0cc474055a3c79e39eb13)) - chris montgomery
+- (**dev**) add `php-lint-project` to devshell - ([7f3f695](https://github.com/kleinweb/lib/commit/7f3f695d7c10b02ee48c3a1f57c0652f0088631f)) - chris montgomery
+- apply php-cs-fixer fixes - ([398dcc2](https://github.com/kleinweb/lib/commit/398dcc2015b991e18a6e3437b1d47aaac8738eb0)) - chris montgomery
+#### Miscellaneous Chores
+- remove obsolete phpstan directive - ([dd1a161](https://github.com/kleinweb/lib/commit/dd1a161ebf4492bc4c84af9564f4cca956982dbd)) - chris montgomery
+
+- - -
+
 ## [1.1.3](https://github.com/kleinweb/lib/compare/26c610de51e5c94cb8dba0552ead278b8b658a20..1.1.3) - 2026-01-20
 #### Bug Fixes
 - `Environment::isProduction()` must return bool - ([26c610d](https://github.com/kleinweb/lib/commit/26c610de51e5c94cb8dba0552ead278b8b658a20)) - chris montgomery
