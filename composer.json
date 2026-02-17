@@ -31,7 +31,7 @@
     "monolog/monolog": "^3.9",
     "nesbot/carbon": "^3.8",
     "roots/acorn": "^5.0",
-    "symfony/http-foundation": "^7.1",
+    "symfony/http-foundation": "^8.0",
     "webmozart/assert": "^1.11"
   },
   "require-dev": {
