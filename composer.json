@@ -32,7 +32,7 @@
     "nesbot/carbon": "^3.8",
     "roots/acorn": "^5.0",
     "symfony/http-foundation": "^7.1",
-    "webmozart/assert": "^1.11"
+    "webmozart/assert": "^2.0"
   },
   "require-dev": {
     "friendsofphp/php-cs-fixer": "^3.59",
