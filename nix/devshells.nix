@@ -13,6 +13,7 @@
     let
       commonPkgs = [
         inputs'.beams.packages.php-lint
+        inputs'.beams.packages.php-lint-project
 
         pkgs.php
         pkgs.php.packages.composer
