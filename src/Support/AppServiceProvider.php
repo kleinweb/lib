@@ -8,11 +8,15 @@ declare(strict_types=1);
 namespace Kleinweb\Lib\Support;
 
 use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Str;
 use Kleinweb\Lib\Console\Commands\Attachment\DeleteDead as DeleteDeadAttachments;
 use Kleinweb\Lib\Console\Commands\Tenancy\DemapDomains;
 use Kleinweb\Lib\Hooks\Attributes\Action;
 use Kleinweb\Lib\Hooks\Attributes\Filter;
 use Kleinweb\Lib\Support\ServiceProvider as ServiceProviderBase;
+use Sentry\Event;
+use Sentry\EventHint;
+use Sentry\Severity;
 
 abstract class AppServiceProvider extends ServiceProviderBase
 {
@@ -123,5 +127,24 @@ abstract class AppServiceProvider extends ServiceProviderBase
         }
 
         \SimpleLogger()->info('Mail sent to {recipient} with subject "{subject}"', $context);
+    }
+
+    /**
+     * Filter the events sent to Sentry.
+     */
+    #[Filter('wp_sentry_before_send')]
+    public function filterSentryBeforeSend(Event $event, ?EventHint $hint = null): ?Event
+    {
+        if (($hint?->exception !== null)
+            && ($event->getLevel() === Severity::warning())
+            && Str::contains($hint->exception->getFile(), [
+                // See <https://kleinweb.atlassian.net/browse/KWG-814>
+                'plugins/co-authors-plus/',
+            ])
+        ) {
+            return null;
+        }
+
+        return $event;
     }
 }
