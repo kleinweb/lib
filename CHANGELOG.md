@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [2.0.0](https://github.com/kleinweb/lib/compare/9359fd8831ec36fc1ff238b1105606effa2f0e40..2.0.0) - 2026-04-28
+#### Features
+- ![BREAKING](https://img.shields.io/badge/BREAKING-red) (**deps**) use wp-packages instead of wpackagist - ([9359fd8](https://github.com/kleinweb/lib/commit/9359fd8831ec36fc1ff238b1105606effa2f0e40)) - chris montgomery
+
+- - -
+
 ## [1.2.0](https://github.com/kleinweb/lib/compare/197bb5604bf8e84ddf573ae35ff7778f048ac276..1.2.0) - 2026-02-17
 #### Features
 - (**logging|mail**) record successful email sending events with Simple History - ([7f544c4](https://github.com/kleinweb/lib/commit/7f544c4e43abbf7d4ac70be5c4a5a84c4b89da51)) - chris montgomery
