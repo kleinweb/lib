@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [3.0.0](https://github.com/kleinweb/lib/compare/1f99e51e050b136e2e43c42f9939ad93586b8e1d..3.0.0) - 2026-08-21
+#### Features
+- ![BREAKING](https://img.shields.io/badge/BREAKING-red) (**deps**) require acorn v6 - ([1f99e51](https://github.com/kleinweb/lib/commit/1f99e51e050b136e2e43c42f9939ad93586b8e1d)) - chris montgomery
+
+- - -
+
 ## [2.0.0](https://github.com/kleinweb/lib/compare/9359fd8831ec36fc1ff238b1105606effa2f0e40..2.0.0) - 2026-04-28
 #### Features
 - ![BREAKING](https://img.shields.io/badge/BREAKING-red) (**deps**) use wp-packages instead of wpackagist - ([9359fd8](https://github.com/kleinweb/lib/commit/9359fd8831ec36fc1ff238b1105606effa2f0e40)) - chris montgomery
