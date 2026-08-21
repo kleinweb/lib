@@ -30,7 +30,7 @@
     "league/uri-components": "^7.0",
     "monolog/monolog": "^3.9",
     "nesbot/carbon": "^3.8",
-    "roots/acorn": "^5.0",
+    "roots/acorn": "^6.0",
     "symfony/http-foundation": "^7.1",
     "webmozart/assert": "^1.11"
   },
