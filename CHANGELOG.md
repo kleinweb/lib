@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [3.0.1](https://github.com/kleinweb/lib/compare/ac1c31271f2fbea67173c8cc11d921f710f72fb9..3.0.1) - 2026-08-26
+#### Bug Fixes
+- allow automatic core patch/minor version updates - ([ac1c312](https://github.com/kleinweb/lib/commit/ac1c31271f2fbea67173c8cc11d921f710f72fb9)) - chris montgomery
+
+- - -
+
 ## [3.0.0](https://github.com/kleinweb/lib/compare/1f99e51e050b136e2e43c42f9939ad93586b8e1d..3.0.0) - 2026-08-21
 #### Features
 - ![BREAKING](https://img.shields.io/badge/BREAKING-red) (**deps**) require acorn v6 - ([1f99e51](https://github.com/kleinweb/lib/commit/1f99e51e050b136e2e43c42f9939ad93586b8e1d)) - chris montgomery
