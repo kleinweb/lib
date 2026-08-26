@@ -18,6 +18,14 @@ abstract class AppServiceProvider extends ServiceProviderBase
 {
     public function boot(): void
     {
+        // Allow automatic WordPress Core patch/minor updates regardless
+        // of version control status.
+        // <https://kleinweb.atlassian.net/browse/KWG-925>
+        add_filter('automatic_updates_is_vcs_checkout', '__return_false', 1);
+        add_filter('allow_dev_auto_core_updates', '__return_true');
+        add_filter('allow_minor_auto_core_updates', '__return_true');
+        add_filter('allow_major_auto_core_updates', '__return_false');
+
         if (!$this->app->runningInConsole()) {
             return;
         }
