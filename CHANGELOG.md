@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [3.0.2](https://github.com/kleinweb/lib/compare/55e6810d9794a2b393139da4d5c87842986d9a97..3.0.2) - 2026-08-27
+#### Bug Fixes
+- disable automatic core minor version updates - ([55e6810](https://github.com/kleinweb/lib/commit/55e6810d9794a2b393139da4d5c87842986d9a97)) - chris montgomery
+
+- - -
+
 ## [3.0.1](https://github.com/kleinweb/lib/compare/ac1c31271f2fbea67173c8cc11d921f710f72fb9..3.0.1) - 2026-08-26
 #### Bug Fixes
 - allow automatic core patch/minor version updates - ([ac1c312](https://github.com/kleinweb/lib/commit/ac1c31271f2fbea67173c8cc11d921f710f72fb9)) - chris montgomery
