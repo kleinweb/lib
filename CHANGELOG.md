@@ -2,6 +2,12 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [3.2.0](https://github.com/kleinweb/lib/compare/4d03e777bd0381978d23be0eff42d534dc838bd3..3.2.0) - 2026-09-21
+#### Features
+- (**media|privacy**) allowlist media url pattern in consent manager - ([4d03e77](https://github.com/kleinweb/lib/commit/4d03e777bd0381978d23be0eff42d534dc838bd3)) - chris montgomery
+
+- - -
+
 ## [3.1.0](https://github.com/kleinweb/lib/compare/0d837453257e5e3a5839a8327d1aef547ea61be3..3.1.0) - 2026-09-21
 #### Features
 - update from project template - ([0d83745](https://github.com/kleinweb/lib/commit/0d837453257e5e3a5839a8327d1aef547ea61be3)) - chris montgomery
