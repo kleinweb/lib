@@ -2,6 +2,17 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [3.1.0](https://github.com/kleinweb/lib/compare/0d837453257e5e3a5839a8327d1aef547ea61be3..3.1.0) - 2026-09-21
+#### Features
+- update from project template - ([0d83745](https://github.com/kleinweb/lib/commit/0d837453257e5e3a5839a8327d1aef547ea61be3)) - chris montgomery
+#### Bug Fixes
+- (**package**) prevent type disjunction in string variable - ([f4a303a](https://github.com/kleinweb/lib/commit/f4a303a3079c481af5eaf8eeff85c79f6c5cfff0)) - chris montgomery
+#### Miscellaneous Chores
+- (**package**) fmt - ([bc06e9a](https://github.com/kleinweb/lib/commit/bc06e9a5f9994c7f7a5227c0ec553a65a64f80ae)) - chris montgomery
+- remove phpstan baseline - ([9f0b8ce](https://github.com/kleinweb/lib/commit/9f0b8ce072333cf8089bed203dca7cae27e46706)) - chris montgomery
+
+- - -
+
 ## [3.0.3](https://github.com/kleinweb/lib/compare/1b480f2ea57448eebd41e77c6ad9c1f52fa1daa5..3.0.3) - 2026-08-28
 #### Bug Fixes
 - revert misguided change to auto-update settings via filter - ([1b480f2](https://github.com/kleinweb/lib/commit/1b480f2ea57448eebd41e77c6ad9c1f52fa1daa5)) - chris montgomery
