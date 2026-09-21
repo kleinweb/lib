@@ -206,7 +206,14 @@ abstract class PackageServiceProvider extends ServiceProvider
             }
         }
 
-        return database_path($migrationsPath . $now->format('Y_m_d_His') . '_' . Str::of($migrationFileName)->snake()->finish('.php'));
+        return database_path(
+            $migrationsPath
+            . $now->format('Y_m_d_His')
+            . '_'
+            . Str::of($migrationFileName)
+                ->snake()
+                ->finish('.php'),
+        );
     }
 
     public function registeringPackage(): void
