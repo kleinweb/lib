@@ -129,4 +129,22 @@ abstract class AppServiceProvider extends ServiceProviderBase
 
         \SimpleLogger()->info('Mail sent to {recipient} with subject "{subject}"', $context);
     }
+
+    /**
+     * Allow additional URL patterns in the consent manager.
+     *
+     * @param string[] $patterns
+     *
+     * @return string[]
+     */
+    #[Filter('tu_cmp_allowed_url_patterns')]
+    public function filterConsentManagerAllowedUrls(array $patterns): array
+    {
+        $offloadedMediaPattern = Media::bucketUrlPattern();
+        if ($offloadedMediaPattern) {
+            $patterns[] = $offloadedMediaPattern;
+        }
+
+        return $patterns;
+    }
 }
