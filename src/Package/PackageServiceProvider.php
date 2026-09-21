@@ -196,7 +196,7 @@ abstract class PackageServiceProvider extends ServiceProvider
 
         if (Str::contains($migrationFileName, '/')) {
             $migrationsPath .= Str::of($migrationFileName)->beforeLast('/')->finish('/');
-            $migrationFileName = Str::of($migrationFileName)->afterLast('/');
+            $migrationFileName = Str::of($migrationFileName)->afterLast('/')->toString();
         }
 
         $filenames = glob(database_path("{$migrationsPath}*.php")) ?: [];
