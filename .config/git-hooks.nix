@@ -2,12 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 {
   perSystem =
-    {
-      config,
-      inputs',
-      pkgs,
-      ...
-    }:
+    { inputs', ... }:
     {
       pre-commit.settings = {
         hooks = {
@@ -25,32 +20,19 @@
           markdownlint.excludes = [
             # Auto-generated
             "CHANGELOG.md"
+            "CLAUDE.md"
           ];
-          php-lint = {
-            enable = true;
-            description = "Check PHP files for syntax errors";
-            package = inputs'.beams.packages.php-lint;
-            entry = "php-lint";
-            types = [
-              "file"
-              "php"
-            ];
-            # Other PHP linters will likely fail when there are syntax errors.
-            fail_fast = true;
-          };
-          reuse = {
-            enable = true;
-            stages = [ "pre-push" ];
-          };
           treefmt.enable = true;
           yamllint.enable = true;
+          yamllint.excludes = [
+            "^\.copier-answers\.yml$"
+            "^\.ddev/.+$"
+          ];
         };
-
         default_stages = [
           "pre-commit"
           "pre-push"
         ];
-
         excludes = [ ];
       };
     };

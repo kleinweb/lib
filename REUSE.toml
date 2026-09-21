@@ -10,11 +10,8 @@ SPDX-License-Identifier = "GPL-3.0-or-later"
 
 [[annotations]]
 path = [
-  "**.dist",
-  "**.dist.*",
   "**.json",
   "**.lock",
-  "**.neon",
   "**.properties",
   "**.yml",
   "**.d.ts",

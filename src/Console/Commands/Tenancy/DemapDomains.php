@@ -98,7 +98,8 @@ final class DemapDomains extends Command
             $newUri = $subdomains
                 ? $oldUri->withHost($label . '.' . $primarySite->domain)
                 : $oldUri->withHost($primarySite->domain)
-                      ->withPath(Path::new('/' . $label));
+                      ->withPath(Path::new('/' . $label))
+            ;
 
             $this->line("{$dryRunPrefix} Setting new URL for site {$id} to <{$newUri}>");
 

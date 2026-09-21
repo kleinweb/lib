@@ -6,12 +6,12 @@
 ---
 extends: default
 
+ignore:
+  - .copier-answers.yml
+  - pnpm-lock.yaml
+
 rules:
   line-length:
     max: 100
     allow-non-breakable-words: true
     allow-non-breakable-inline-mappings: true
-
-ignore:
-  # Generated:
-  - .copier-answers.yml

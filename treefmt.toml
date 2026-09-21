@@ -3,7 +3,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 [global]
-excludes = ["**/node_modules/**", "**/vendor/**", "**/*.min.*"]
+excludes = [
+  "**/node_modules/**",
+  "**/vendor/**",
+  "**/*.min.*",
+  "**/AGENTS.md",
+  "**/CHANGELOG.md",
+  "**/CLAUDE.md",
+  "pnpm-lock.yaml",
+]
 
 [formatter.biome]
 command = "biome"
@@ -14,6 +22,7 @@ options = [
   "--files-ignore-unknown=true",
 ]
 includes = [
+  "*.css",
   "*.js",
   "*.ts",
   "*.mjs",
@@ -65,8 +74,8 @@ excludes = []
 [formatter.prettier]
 command = "prettier"
 options = ["--write"]
-includes = ["*.css", "*.md", "*.mdx", "*.scss", "*.yaml", "*.yml"]
-excludes = ["CHANGELOG.md"]
+includes = ["*.md", "*.mdx", "*.scss", "*.yaml", "*.yml"]
+excludes = ["CHANGELOG.md", ".ddev/**"]
 
 [formatter.taplo]
 command = "taplo"

@@ -1,4 +1,6 @@
 # -*- mode: neon; -*-
+# SPDX-FileCopyrightText: 2024-2026 Temple University <kleinweb@temple.edu>
+# SPDX-License-Identifier: CC0-1.0
 
 includes:
     - phpstan-baseline.neon

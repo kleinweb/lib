@@ -2,12 +2,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 {
   description = "Kleinweb Standard Library";
+
   inputs = {
-    beams.url = "github:kleinweb/beams";
-
     flake-parts.url = "github:hercules-ci/flake-parts";
-    pre-commit-hooks.url = "github:cachix/pre-commit-hooks.nix";
-
+    beams.url = "github:kleinweb/beams";
+    git-hooks.url = "github:cachix/git-hooks.nix";
     nixos-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     nixpkgs-trunk.url = "github:NixOS/nixpkgs/master";
     nixpkgs.follows = "nixos-unstable";
@@ -23,9 +22,10 @@
       ];
 
       imports = [
-        inputs.pre-commit-hooks.flakeModule
-        ./nix/devshells.nix
-        ./nix/git-hooks.nix
+        inputs.git-hooks.flakeModule
+
+        ./.config/devshells.nix
+        ./.config/git-hooks.nix
       ];
 
       perSystem =
@@ -34,9 +34,8 @@
           _module.args.pkgs = import inputs.nixpkgs {
             inherit system;
             overlays = [
-              (final: prev: {
-                just = inputs'.nixpkgs-trunk.legacyPackages.just;
-                php = final.php83;
+              (_final: prev: {
+                php = prev.php83;
               })
             ];
           };

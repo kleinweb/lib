@@ -51,7 +51,8 @@ final class Application extends RootsApplication
                 ->filter(
                     static fn ($path) => @$files->isFile("{$path}/vendor/composer/installed.json")
                         && @$files->isFile("{$path}/composer.json"),
-                )->all();
+                )->all()
+            ;
 
             return new PackageManifest(
                 $files,

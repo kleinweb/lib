@@ -1,7 +1,5 @@
-# SPDX-FileCopyrightText: 2024-2026 Temple University <kleinweb@temple.edu>
-#
+# SPDX-FileCopyrightText: (C) 2024-2026 Temple University <kleinweb@temple.edu>
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 {
   perSystem =
     {
@@ -11,23 +9,40 @@
       ...
     }:
     let
+      checksPkgs = [
+        config.pre-commit.settings.hooks.markdownlint.package
+        config.pre-commit.settings.hooks.yamllint.package
+      ];
+
+      formatterPkgs = [
+        pkgs.dos2unix
+        pkgs.nixfmt
+        pkgs.prettier
+        pkgs.taplo
+        pkgs.treefmt
+      ];
+
+      releasePkgs = [
+        pkgs.cocogitto
+      ];
+
       commonPkgs = [
-        inputs'.beams.packages.php-lint
-        inputs'.beams.packages.php-lint-project
-
-        pkgs.php
-        pkgs.php.packages.composer
-
         pkgs.biome
-        pkgs.dotenv-linter
+        pkgs.curl
         pkgs.fd
         pkgs.gnused
         pkgs.jq
-        pkgs.just
-        pkgs.moreutils # provides `sponge`
+        pkgs.moreutils
         pkgs.ripgrep
         pkgs.nodejs
+        pkgs.php
+        pkgs.php.packages.composer
+        pkgs.pnpm
+        pkgs.xq-xml
+        pkgs.wp-cli
       ];
+
+      developmentPkgs = commonPkgs ++ checksPkgs ++ formatterPkgs ++ releasePkgs;
     in
     {
       devShells.default = pkgs.mkShellNoCC {
@@ -38,18 +53,7 @@
 
           ${config.pre-commit.installationScript}
         '';
-        nativeBuildInputs = commonPkgs ++ [
-          config.pre-commit.settings.hooks.markdownlint.package
-          config.pre-commit.settings.hooks.reuse.package
-          config.pre-commit.settings.hooks.yamllint.package
-
-          pkgs.dos2unix
-          pkgs.cocogitto
-          pkgs.nixfmt # pkgs.nixfmt-rfc-style via overlay
-          pkgs.nodePackages.prettier
-          pkgs.taplo
-          pkgs.treefmt # pkgs.treefmt2 via overlay
-
+        nativeBuildInputs = developmentPkgs ++ [
           # pre-commit helper tool to simplify file matching.  For example,
           # the `yml` and `yaml` extensions share the same "type" of `yaml`.
           # Otherwise, you would need to write a regexp for both extensions.
@@ -60,6 +64,8 @@
         ];
       };
 
-      devShells.ci = pkgs.mkShellNoCC { nativeBuildInputs = commonPkgs; };
+      devShells.ci = pkgs.mkShellNoCC {
+        nativeBuildInputs = commonPkgs ++ checksPkgs;
+      };
     };
 }

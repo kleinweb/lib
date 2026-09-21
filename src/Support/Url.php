@@ -35,7 +35,8 @@ final class Url
     {
         $uri = Uri::new(is_multisite() ? network_home_url() : home_url());
         $path = HierarchicalPath::new($path)
-            ->withoutDotSegments();
+            ->withoutDotSegments()
+        ;
 
         if (!$path->isAbsolute()) {
             // phpcs:ignore WordPress.Security.EscapeOutput.ExceptionNotEscaped
@@ -44,7 +45,8 @@ final class Url
 
         $webRoot = \app()->webRoot();
         $webRoot = HierarchicalPath::new($webRoot)
-            ->withoutDotSegments();
+            ->withoutDotSegments()
+        ;
 
         Assert::stringNotEmpty($path->value());
         Assert::stringNotEmpty($webRoot->value());

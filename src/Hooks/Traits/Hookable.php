@@ -59,7 +59,8 @@ trait Hookable
                         \add_filter($item['hook'], $callable, $item['priority'], 999);
                     }
                 },
-            );
+            )
+        ;
     }
 
     /**

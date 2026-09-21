@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: (C) 2022-2026 Temple University <kleinweb@temple.edu>
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import '../vars.just'
+import 'common.vars.just'
 
 gpl3 := 'GPL-3.0-or-later'
 mit := 'MIT'
@@ -15,7 +15,6 @@ lint:
 [private]
 annotate license +ARGS:
   reuse annotate \
-    --template compact \
     --copyright-prefix spdx-c \
     --license '{{license}}' \
     --copyright '{{owner-attr}}' \

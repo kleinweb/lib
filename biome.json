@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.11/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.13/schema.json",
   "files": {
     "includes": ["**", "!**/composer.lock", "!**/*.min.*", "!**/CHANGELOG.md"]
   },
@@ -10,12 +10,31 @@
     "indentWidth": 2,
     "lineEnding": "lf",
     "lineWidth": 80,
-    "attributePosition": "auto"
+    "attributePosition": "auto",
+    "useEditorconfig": true
   },
-  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "assist": {
+    "actions": {
+      "source": {
+        "useSortedAttributes": "on",
+        "useSortedProperties": "on",
+        "organizeImports": "on"
+      }
+    }
+  },
   "linter": {
     "enabled": true,
-    "rules": { "recommended": true }
+    "rules": {
+      "preset": "recommended",
+      "complexity": {
+        "useLiteralKeys": "off"
+      }
+    }
+  },
+  "css": {
+    "formatter": {
+      "quoteStyle": "double"
+    }
   },
   "javascript": {
     "formatter": {
@@ -30,14 +49,10 @@
       "attributePosition": "auto"
     }
   },
-  "css": {
-    "formatter": {
-      "enabled": false
-    }
-  },
   "vcs": {
     "enabled": true,
     "clientKind": "git",
+    "defaultBranch": "main",
     "useIgnoreFile": true
   }
 }
