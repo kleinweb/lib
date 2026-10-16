@@ -91,6 +91,13 @@ implementation for WordPress users.
 `Tenancy\Site` provides helpers for WordPress multisite: site URLs, hostnames,
 original host detection (via `orig_host` site meta), and domain checks.
 
+`Database\Models\Site` wraps `WP_Site` and its blogmeta. Each site is
+identified by a `Tenancy\SiteKey` stored as the `site_key` blogmeta
+(see `Tenancy\SiteMeta`); blog IDs differ between environments, keys do not.
+`Tenancy\SiteRepository` (a singleton registered by `AppServiceProvider`)
+looks sites up by key or ID. Console commands `site:list` and
+`site:assign-keys` list sites and backfill keys.
+
 ### Key Support Classes
 
 - `Support\Plugin` — readonly DTO for plugin metadata (basename, path, URL)

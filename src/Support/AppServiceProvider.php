@@ -9,13 +9,23 @@ namespace Kleinweb\Lib\Support;
 
 use Illuminate\Support\Facades\Request;
 use Kleinweb\Lib\Console\Commands\Attachment\DeleteDead as DeleteDeadAttachments;
+use Kleinweb\Lib\Console\Commands\Tenancy\AssignSiteKeys;
 use Kleinweb\Lib\Console\Commands\Tenancy\DemapDomains;
+use Kleinweb\Lib\Console\Commands\Tenancy\ListSites;
 use Kleinweb\Lib\Hooks\Attributes\Action;
 use Kleinweb\Lib\Hooks\Attributes\Filter;
 use Kleinweb\Lib\Support\ServiceProvider as ServiceProviderBase;
+use Kleinweb\Lib\Tenancy\SiteRepository;
 
 abstract class AppServiceProvider extends ServiceProviderBase
 {
+    public function register(): void
+    {
+        parent::register();
+
+        $this->app->singleton(SiteRepository::class);
+    }
+
     public function boot(): void
     {
         // Allow automatic WordPress Core patch/minor updates regardless
@@ -29,7 +39,9 @@ abstract class AppServiceProvider extends ServiceProviderBase
 
         $this->commands([
             DeleteDeadAttachments::class,
+            AssignSiteKeys::class,
             DemapDomains::class,
+            ListSites::class,
         ]);
     }
 
