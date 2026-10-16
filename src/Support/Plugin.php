@@ -7,6 +7,8 @@ declare(strict_types=1);
 
 namespace Kleinweb\Lib\Support;
 
+use Webmozart\Assert\Assert;
+
 use function ltrim;
 use function plugin_basename;
 use function plugin_dir_path;
@@ -18,15 +20,15 @@ final readonly class Plugin
     public string $name;
     public string $path;
     public string $url;
+    public string $version;
 
-    final private function __construct(
-        public string $file,
-        public string $version,
-    ) {
+    final private function __construct(public string $file)
+    {
         $this->basename = $this->basename();
         $this->name = $this->basename;
         $this->path = $this->path();
         $this->url = $this->url();
+        $this->version = $this->version();
     }
 
     /**
@@ -51,5 +53,18 @@ final readonly class Plugin
     final public function path(string $file = ''): string
     {
         return plugin_dir_path($this->file) . ltrim($file, '/');
+    }
+
+    /**
+     * Read version number from plugin headers.
+     */
+    final public function version(): string
+    {
+        $data = get_file_data($this->file, ['Version' => 'Version']);
+        $version = $data['Version'] ?? '';
+
+        Assert::stringNotEmpty($version);
+
+        return $version;
     }
 }
