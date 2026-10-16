@@ -8,11 +8,13 @@ declare(strict_types=1);
 namespace Kleinweb\Lib\Console\Commands\Tenancy;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Process;
 use Kleinweb\Lib\Support\Environment;
+use Kleinweb\Lib\Tenancy\SiteKey;
+use Kleinweb\Lib\Tenancy\SiteMeta;
 use League\Uri\Components\Domain;
 use League\Uri\Components\Path;
 use League\Uri\Uri;
+use Symfony\Component\Process\Process;
 use Webmozart\Assert\Assert;
 use WP_CLI;
 use WP_Site;
@@ -25,7 +27,14 @@ final class DemapDomains extends Command
      * @var string
      */
     // phpcs:ignore SlevomatCodingStandard.Files.LineLength.LineTooLong
-    protected $signature = 'app:tenancy:demap-domains {--dry-run} {--subdomains} {--skip-replace}';
+    protected $signature = 'site:demap-domains {--dry-run} {--subdomains} {--skip-replace}';
+
+    /**
+     * The console command name aliases.
+     *
+     * @var list<string>
+     */
+    protected $aliases = ['app:tenancy:demap-domains'];
 
     /**
      * The console command description.
@@ -46,7 +55,8 @@ final class DemapDomains extends Command
         $dryRunPrefix = $dryRun ? '[DRY-RUN]' : '';
         $resultCols = ['blog_id', 'from_url', 'to_url'];
 
-        $sites = \collect(get_sites());
+        // `get_sites()` returns at most 100 sites unless `number` is set.
+        $sites = \collect(get_sites(['number' => 0]));
         $primarySite = get_site(get_main_site_id());
         Assert::isInstanceOf($primarySite, WP_Site::class);
 
@@ -66,23 +76,23 @@ final class DemapDomains extends Command
 
             $this->line("{$dryRunPrefix} Storing initial values in site meta...");
 
-            if (! get_site_meta($id, 'orig_host')) {
+            if (! get_site_meta($id, SiteMeta::OriginalHost->value)) {
                 if (! $dryRun) {
-                    add_site_meta($id, 'orig_host', $site->domain);
+                    add_site_meta($id, SiteMeta::OriginalHost->value, $site->domain);
                 }
                 $this->line("{$dryRunPrefix} Saved site {$id} meta 'orig_host' as {$site->domain}");
             }
 
-            if (! get_site_meta($id, 'orig_path')) {
+            if (! get_site_meta($id, SiteMeta::OriginalPath->value)) {
                 if (!$dryRun) {
-                    add_site_meta($id, 'orig_path', $site->path);
+                    add_site_meta($id, SiteMeta::OriginalPath->value, $site->path);
                 }
                 $this->info("{$dryRunPrefix} Saved site {$id} meta 'orig_path' as {$site->path}");
             }
 
-            if (! get_site_meta($id, 'orig_siteurl')) {
+            if (! get_site_meta($id, SiteMeta::OriginalSiteUrl->value)) {
                 if (!$dryRun) {
-                    add_site_meta($id, 'orig_siteurl', $oldSiteUrl);
+                    add_site_meta($id, SiteMeta::OriginalSiteUrl->value, $oldSiteUrl);
                 }
                 // phpcs:ignore SlevomatCodingStandard.Files.LineLength.LineTooLong
                 $this->line("{$dryRunPrefix} Saved site {$id} meta 'orig_siteurl' as {$oldSiteUrl}");
@@ -90,10 +100,14 @@ final class DemapDomains extends Command
 
             $oldHost = $oldUri->getHost();
             $oldDomain = Domain::new($oldHost)->withRootLabel();
-            // Next level below top-level domain name.
-            $label = $oldDomain->get(-1);
+            // Prefer the site's key; otherwise infer the leftmost host label.
+            $storedKey = get_site_meta($id, SiteMeta::Key->value, true);
+            $siteKey = SiteKey::tryFrom(is_string($storedKey) ? $storedKey : null);
+            $label = $siteKey->value ?? $oldDomain->get(-1);
 
-            $this->line("Inferred '{$label}' as site label...");
+            $this->line($siteKey !== null
+                ? "Using site key '{$label}' as site label..."
+                : "Inferred '{$label}' as site label...");
 
             $newUri = $subdomains
                 ? $oldUri->withHost($label . '.' . $primarySite->domain)
@@ -140,7 +154,13 @@ final class DemapDomains extends Command
 
             if ($replace) {
                 $this->line("{$dryRunPrefix} Performing database replacements for URL change...");
-                $result = Process::run("wp {$wpArgs}");
+                $process = Process::fromShellCommandline("wp {$wpArgs}");
+                $process->setTimeout(null);
+                $process->run();
+                if (! $process->isSuccessful()) {
+                    $error = $process->getErrorOutput();
+                    $this->warn("{$dryRunPrefix} search-replace failed for site {$id}: {$error}");
+                }
             } else {
                 $followupCommands[] = sprintf('wp @%s %s', $cmdEnv, $wpArgs);
             }

@@ -47,7 +47,19 @@ final class SiteRepository
      */
     public function findById(int $id): ?Site
     {
-        return $this->load()[$id] ?? null;
+        if ($this->sites !== null) {
+            return $this->sites[$id] ?? null;
+        }
+
+        // Avoid loading the whole network for a single lookup; `get_site()`
+        // is backed by WordPress's object cache.
+        $this->ensureMultisite();
+        $site = Site::find($id);
+
+        $inNetwork = $site !== null
+            && (int) $site->getCoreObject()->site_id === get_current_network_id();
+
+        return $inNetwork ? $site : null;
     }
 
     /**
@@ -115,9 +127,7 @@ final class SiteRepository
             return $this->sites;
         }
 
-        if (!is_multisite()) {
-            throw new MultisiteOnly();
-        }
+        $this->ensureMultisite();
 
         // `get_sites()` returns 100 sites unless `number` is set; 0 means no limit.
         /** @var list<WP_Site> $found */
@@ -135,5 +145,15 @@ final class SiteRepository
         }
 
         return $this->sites = $sites;
+    }
+
+    /**
+     * @throws MultisiteOnly
+     */
+    private function ensureMultisite(): void
+    {
+        if (!is_multisite()) {
+            throw new MultisiteOnly();
+        }
     }
 }
