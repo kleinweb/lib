@@ -14,10 +14,12 @@ use Kleinweb\Lib\Tenancy\SiteMeta;
 use Webmozart\Assert\Assert;
 use WP_Site;
 
+use function count;
 use function get_blog_option;
 use function get_home_url;
 use function get_site;
 use function get_site_meta;
+use function is_array;
 use function is_int;
 use function is_main_site;
 use function is_string;
@@ -121,8 +123,14 @@ final class Site extends Model
     /**
      * Run a callback in this site's context, then restore the previous site.
      *
-     * Switches WordPress data (database tables, options, Acorn's cache and
-     * session prefixes); it does not load this site's service providers.
+     * Uses `switch_to_blog()`, so the same things follow as in Core: database
+     * tables, options and object cache, plus this library's per-blog Laravel
+     * cache and the site's config overlay.  Providers, routes, views and post
+     * types stay those of the site WordPress loaded, as Core never reloads
+     * plugins or themes on a switch.
+     *
+     * The previous site is restored even if the callback throws or leaves
+     * extra `switch_to_blog()` calls unrestored.
      *
      * @template TReturn
      *
@@ -132,13 +140,26 @@ final class Site extends Model
      */
     public function run(Closure $callback): mixed
     {
+        $depth = self::switchDepth();
         switch_to_blog($this->id());
 
         try {
             return $callback($this);
         } finally {
-            restore_current_blog();
+            while (self::switchDepth() > $depth && restore_current_blog()) {
+                // Unwind to the depth this call started at.
+            }
         }
+    }
+
+    /**
+     * Number of unrestored `switch_to_blog()` calls.
+     */
+    private static function switchDepth(): int
+    {
+        $stack = $GLOBALS['_wp_switched_stack'] ?? [];
+
+        return is_array($stack) ? count($stack) : 0;
     }
 
     public function getCoreObject(): WP_Site

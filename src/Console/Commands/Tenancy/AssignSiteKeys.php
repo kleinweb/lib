@@ -16,6 +16,7 @@ use Kleinweb\Lib\Tenancy\SiteRepository;
 
 use function add_site_meta;
 use function filter_var;
+use function is_site_meta_supported;
 use function is_string;
 use function sprintf;
 use function update_site_meta;
@@ -46,6 +47,15 @@ final class AssignSiteKeys extends Command
 
     public function handle(SiteRepository $sites): int
     {
+        if (!is_site_meta_supported()) {
+            $this->error(
+                'This network has no blogmeta table, so site keys cannot be stored. '
+                . 'Run `wp core update-db --network` first.',
+            );
+
+            return self::FAILURE;
+        }
+
         $sites->refresh();
 
         return $this->option('id') !== null

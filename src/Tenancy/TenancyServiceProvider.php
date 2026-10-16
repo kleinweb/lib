@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace Kleinweb\Lib\Tenancy;
 
+use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\ServiceProvider;
 use Kleinweb\Lib\Console\Commands\Tenancy\AssignSiteKeys;
@@ -17,16 +18,25 @@ use Kleinweb\Lib\Console\Commands\Tenancy\DemapDomains;
 use Kleinweb\Lib\Console\Commands\Tenancy\ListSites;
 use Kleinweb\Lib\Console\Commands\Tenancy\MakeSite;
 use Kleinweb\Lib\Console\Commands\Tenancy\RunForSites;
+use Kleinweb\Lib\Tenancy\Bootstrappers\CacheBootstrapper;
 use Kleinweb\Lib\Tenancy\Bootstrappers\ConfigBootstrapper;
+use Kleinweb\Lib\Tenancy\Contracts\BlogBootstrapper;
 use Kleinweb\Lib\Tenancy\Contracts\SiteBootstrapper;
+use Kleinweb\Lib\Tenancy\Discovery\Psr4Autoloader;
+use Kleinweb\Lib\Tenancy\Discovery\SiteManifest;
+use Throwable;
 use Webmozart\Assert\Assert;
 
 use function add_action;
-use function array_map;
-use function array_values;
+use function count;
+use function get_current_blog_id;
 use function function_exists;
 use function is_array;
+use function is_dir;
 use function is_multisite;
+use function ms_is_switched;
+use function spl_autoload_register;
+use function str_starts_with;
 
 /**
  * Multisite support: per-site providers, config and commands.
@@ -36,35 +46,28 @@ use function is_multisite;
  *
  * Options, all optional, in `config/tenancy.php`:
  *
- * - `bootstrappers`: {@see SiteBootstrapper} classes run on initialize and on
- *   every switch; default the config overlay only.
+ * - `bootstrappers`: {@see SiteBootstrapper} classes for keyed sites; default
+ *   the config overlay.
+ * - `blog_bootstrappers`: {@see BlogBootstrapper} classes for every blog;
+ *   default per-blog cache isolation.
  * - `meta_config`: blogmeta key => config key, applied by the config overlay.
  */
 final class TenancyServiceProvider extends ServiceProvider
 {
+    /** Whether the cross-site plugin autoload fallback has run. */
+    private static bool $siteAutoloadRegistered = false;
+
     public function register(): void
     {
         $this->app->singleton(SiteRepository::class);
-        $this->app->singleton(Discovery\SiteManifest::class);
-        $this->app->singleton(SiteContext::class, function (): SiteContext {
-            $classes = $this->app->make('config')
-                ->get('tenancy.bootstrappers', [ConfigBootstrapper::class])
-            ;
-
-            $bootstrappers = array_map(function (mixed $class): SiteBootstrapper {
-                Assert::string($class);
-                $bootstrapper = $this->app->make($class);
-                Assert::isInstanceOf($bootstrapper, SiteBootstrapper::class);
-
-                return $bootstrapper;
-            }, is_array($classes) ? array_values($classes) : []);
-
-            return new SiteContext(
-                $this->app->make(SiteRepository::class),
-                $this->app->make(Dispatcher::class),
-                $bootstrappers,
-            );
-        });
+        $this->app->singleton(SiteManifest::class);
+        $this->app->singleton(SiteContext::class, fn (): SiteContext => new SiteContext(
+            $this->app->make(SiteRepository::class),
+            $this->app->make(Dispatcher::class),
+            $this->blogBootstrappers(),
+            $this->siteBootstrappers(),
+            $this->report(...),
+        ));
 
         if (!self::multisite()) {
             return;
@@ -74,7 +77,7 @@ final class TenancyServiceProvider extends ServiceProvider
         // boots: site providers register last, so their bindings win, and the
         // config overlay sees package defaults already merged.
         $this->app->booting(function (): void {
-            $this->initializeSite();
+            $this->initialize();
         });
     }
 
@@ -83,14 +86,6 @@ final class TenancyServiceProvider extends ServiceProvider
         if (!self::multisite()) {
             return;
         }
-
-        $context = $this->app->make(SiteContext::class);
-
-        // After Acorn's own handler (priority 10), which re-prefixes the cache
-        // and session for the new blog.
-        add_action('switch_blog', static function (mixed $blogId) use ($context): void {
-            $context->switchTo((int) $blogId);
-        }, 20, 1);
 
         $this->optimizes(optimize: 'site:cache', clear: 'site:clear', key: 'sites');
 
@@ -108,15 +103,171 @@ final class TenancyServiceProvider extends ServiceProvider
         }
     }
 
-    private function initializeSite(): void
+    /**
+     * Register the request site's code and start following `switch_blog`.
+     *
+     * Failure to discover or load site code is reported and leaves the
+     * request on plain WordPress behaviour; it never stops Acorn booting.
+     */
+    private function initialize(): void
     {
-        $site = $this->app->make(SiteRepository::class)->current();
-        if ($site?->key() === null) {
+        $sites = $this->app->make(SiteRepository::class);
+        $context = $this->app->make(SiteContext::class);
+
+        $site = null;
+        try {
+            $site = $sites->findById(self::requestBlogId());
+            if ($site?->key() !== null) {
+                $this->app->make(SiteLoader::class)->load($site);
+            } else {
+                $site = null;
+            }
+        } catch (Throwable $e) {
+            $this->report($e);
+        }
+
+        $context->initialize($site, get_current_blog_id());
+
+        // Acorn's own handler (priority 10) sets `cache.prefix` and
+        // `session.cookie` for the new blog first.
+        add_action('switch_blog', static function (mixed $blogId) use ($context): void {
+            $context->sync((int) $blogId);
+        }, 20, 1);
+
+        // Keep the site list current in long-running processes.
+        $refresh = static function () use ($sites): void {
+            $sites->refresh();
+        };
+        add_action('wp_initialize_site', $refresh);
+        add_action('wp_update_site', $refresh);
+        add_action('wp_delete_site', $refresh);
+
+        $this->registerSiteAutoloadFallback($sites);
+
+        $this->app->booted(static function () use ($context): void {
+            $context->announce();
+        });
+    }
+
+    /**
+     * Make classes from every site plugin loadable, not only the active one.
+     *
+     * A queued job or a config value from another site may name a class in
+     * that site's plugin.  On the first miss under `App\Sites\`, register
+     * every site plugin's autoload map and retry.
+     */
+    private function registerSiteAutoloadFallback(SiteRepository $sites): void
+    {
+        $manifest = $this->app->make(SiteManifest::class);
+
+        try {
+            $prefix = $this->app->getNamespace() . 'Sites\\';
+        } catch (Throwable) {
             return;
         }
 
-        $this->app->make(SiteLoader::class)->load($site);
-        $this->app->make(SiteContext::class)->initialize($site);
+        $report = $this->report(...);
+        $fallback = static function (string $class) use (
+            $prefix,
+            $sites,
+            $manifest,
+            $report,
+        ): void {
+            if (self::$siteAutoloadRegistered || !str_starts_with($class, $prefix)) {
+                return;
+            }
+
+            self::$siteAutoloadRegistered = true;
+
+            try {
+                foreach ($sites->all() as $site) {
+                    $key = $site->key();
+                    if ($key === null || !$key->isNamespaceable()) {
+                        continue;
+                    }
+
+                    $plugin = $manifest->pluginPath($key);
+                    if (is_dir($plugin)) {
+                        Psr4Autoloader::register($manifest->package($plugin, $key)['psr4']);
+                    }
+                }
+
+                Psr4Autoloader::load($class);
+            } catch (Throwable $e) {
+                $report($e);
+            }
+        };
+
+        spl_autoload_register($fallback);
+    }
+
+    /**
+     * The blog WordPress loaded, even if initialization runs mid-switch.
+     */
+    private static function requestBlogId(): int
+    {
+        $stack = $GLOBALS['_wp_switched_stack'] ?? [];
+
+        return (ms_is_switched() && is_array($stack) && count($stack) > 0)
+            ? (int) $stack[0]
+            : get_current_blog_id();
+    }
+
+    /**
+     * @return list<BlogBootstrapper>
+     */
+    private function blogBootstrappers(): array
+    {
+        $instances = [];
+        $classes = $this->classes('tenancy.blog_bootstrappers', [CacheBootstrapper::class]);
+        foreach ($classes as $class) {
+            $instance = $this->app->make($class);
+            Assert::isInstanceOf($instance, BlogBootstrapper::class);
+            $instances[] = $instance;
+        }
+
+        return $instances;
+    }
+
+    /**
+     * @return list<SiteBootstrapper>
+     */
+    private function siteBootstrappers(): array
+    {
+        $instances = [];
+        foreach ($this->classes('tenancy.bootstrappers', [ConfigBootstrapper::class]) as $class) {
+            $instance = $this->app->make($class);
+            Assert::isInstanceOf($instance, SiteBootstrapper::class);
+            $instances[] = $instance;
+        }
+
+        return $instances;
+    }
+
+    /**
+     * @param list<class-string> $default
+     *
+     * @return list<string>
+     */
+    private function classes(string $key, array $default): array
+    {
+        $classes = $this->app->make('config')->get($key, $default);
+        Assert::isList($classes);
+        Assert::allString($classes);
+
+        return $classes;
+    }
+
+    /**
+     * Report without letting a failing reporter escape.
+     */
+    private function report(Throwable $e): void
+    {
+        try {
+            $this->app->make(ExceptionHandler::class)->report($e);
+        } catch (Throwable) {
+            // Nothing else to do: never break the caller.
+        }
     }
 
     private static function multisite(): bool

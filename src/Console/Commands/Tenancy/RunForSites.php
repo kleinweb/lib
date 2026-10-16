@@ -8,15 +8,10 @@ declare(strict_types=1);
 namespace Kleinweb\Lib\Console\Commands\Tenancy;
 
 use Illuminate\Console\Command;
-use Kleinweb\Lib\Database\Models\Site;
-use Kleinweb\Lib\Tenancy\SiteRepository;
+use Kleinweb\Lib\Console\Concerns\InteractsWithSites;
 use Symfony\Component\Process\Process;
 
-use function array_filter;
-use function array_map;
 use function escapeshellarg;
-use function in_array;
-use function is_array;
 use function is_string;
 use function sprintf;
 
@@ -29,6 +24,8 @@ use function sprintf;
  */
 final class RunForSites extends Command
 {
+    use InteractsWithSites;
+
     /**
      * The name and signature of the console command.
      *
@@ -47,7 +44,7 @@ final class RunForSites extends Command
      */
     protected $description = 'Run an Acorn command for each site, in a separate process per site';
 
-    public function handle(SiteRepository $sites): int
+    public function handle(): int
     {
         $commandline = $this->argument('commandline');
         $wp = $this->option('wp');
@@ -57,24 +54,13 @@ final class RunForSites extends Command
             return self::FAILURE;
         }
 
-        $only = self::keys($this->option('sites'));
-        $skip = self::keys($this->option('skip-sites'));
-
-        $selected = $sites->all()->filter(static function (Site $site) use ($only, $skip): bool {
-            $key = $site->key()?->value;
-
-            if ($only !== [] && !in_array($key, $only, true)) {
-                return false;
-            }
-
-            return !in_array($key, $skip, true);
-        });
+        $selected = $this->selectedSites();
 
         $results = [];
         $failed = 0;
 
         foreach ($selected as $site) {
-            $label = $site->key()->value ?? "blog {$site->id()}";
+            $label = $this->siteLabel($site);
             $this->components->info(sprintf('%s <%s>', $label, $site->url()));
 
             $process = Process::fromShellCommandline(sprintf(
@@ -96,20 +82,5 @@ final class RunForSites extends Command
         $this->table(['Site', 'URL', 'Exit code'], $results);
 
         return ($failed === 0) ? self::SUCCESS : self::FAILURE;
-    }
-
-    /**
-     * @return list<string>
-     */
-    private static function keys(mixed $option): array
-    {
-        if (!is_array($option)) {
-            return [];
-        }
-
-        return \array_values(array_filter(array_map(
-            static fn (mixed $key): string => is_string($key) ? $key : '',
-            $option,
-        )));
     }
 }

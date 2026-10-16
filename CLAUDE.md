@@ -114,6 +114,31 @@ boot), it:
   Bootstrappers are reverted and re-applied on every `switch_blog`
   (`Tenancy\SiteContext`); providers are not.
 
+#### `switch_to_blog()` contract
+
+Multisite support mirrors Core: code is per process, data follows the switch.
+
+| Follows every `switch_to_blog()` / `restore_current_blog()` | Fixed to the site WordPress loaded |
+| --- | --- |
+| WordPress tables, options, object cache (Core) | Providers and container bindings |
+| Laravel cache, per blog (`Tenancy\Bootstrappers\CacheBootstrapper`) | Routes, view paths, view composers, commands |
+| Config overlay for keyed sites (`ConfigBootstrapper`) | Objects that copied config when built (e.g. acorn-mail) |
+| `cache.prefix` / `session.cookie` (Acorn) | Post types and taxonomies (Core never re-registers them) |
+
+- `Tenancy\SiteContext::sync()` runs on `switch_blog` at priority 20, after
+  Acorn's handler. Nothing it runs may throw: Core has already switched its
+  globals, so failures (including in `SiteSwitched` listeners) are reported
+  through the exception handler and skipped.
+- It also runs for Core's internal switches (`get_home_url($id)`,
+  `get_blog_option()`, `wp_initialize_site()`), so blog bootstrappers and
+  `SiteSwitched` listeners must be cheap and idempotent.
+- `Database\Models\Site::run()` restores the starting blog even if the
+  callback throws or leaves extra switches unrestored. Console commands that
+  loop over sites use `Console\Concerns\InteractsWithSites::forEachSite()`;
+  work that needs another site's bindings uses `site:run`.
+- Code that sets a config key a site overlay also sets, while switched, loses
+  that change on the next switch.
+
 Discovery results can be cached with `site:cache` (`Tenancy\Discovery\SiteManifest`).
 Commands: `site:list`, `site:assign-keys`, `site:run`, `site:check`,
 `site:cache`, `site:clear`, `site:demap-domains`, `make:site`.
