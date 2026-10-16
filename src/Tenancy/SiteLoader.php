@@ -13,7 +13,6 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\View\FileViewFinder;
 use Kleinweb\Lib\Database\Models\Site;
-use Kleinweb\Lib\Tenancy\Discovery\Psr4Autoloader;
 use Kleinweb\Lib\Tenancy\Discovery\SiteManifest;
 use ReflectionClass;
 use Roots\Acorn\View\Composer;
@@ -66,9 +65,8 @@ final class SiteLoader
         $providers = $code['providers'];
 
         if ($this->pluginIsActive($key->value)) {
-            $plugin = $this->manifest->package($this->manifest->pluginPath($key), $key);
-            Psr4Autoloader::register($plugin['psr4']);
-            $providers = [...$providers, ...$plugin['providers']];
+            $plugin = $this->manifest->pluginPath($key);
+            $providers = [...$providers, ...$this->manifest->providers($plugin)];
         }
 
         $extra = $this->app->make('config')->get("sites.{$key->value}.app.providers", []);
@@ -77,9 +75,7 @@ final class SiteLoader
         }
 
         foreach ($this->themeDirectories() as $theme) {
-            $package = $this->manifest->package($theme);
-            Psr4Autoloader::register($package['psr4']);
-            $providers = [...$providers, ...$package['providers']];
+            $providers = [...$providers, ...$this->manifest->providers($theme)];
         }
 
         // Keep the last occurrence of a repeated provider, preserving the

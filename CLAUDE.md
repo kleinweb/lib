@@ -114,6 +114,17 @@ boot), it:
   Bootstrappers are reverted and re-applied on every `switch_blog`
   (`Tenancy\SiteContext`); providers are not.
 
+#### Class loading
+
+All site, theme and site-plugin classes are autoloaded by Composer on every
+site: `app/Sites/*` through the project's `App\` mapping, themes and site
+plugins through `wikimedia/composer-merge-plugin` including their
+`composer.json`. The library adds no autoloaders. Loading a class has no side
+effects; site-specific behaviour comes only from which providers
+`SiteLoader` registers. Theme and site-plugin `composer.json` files must not
+use `autoload.files`, which would run on every site; `site:check` reports
+it, along with PSR-4 prefixes Composer does not know.
+
 #### `switch_to_blog()` contract
 
 Multisite support mirrors Core: code is per process, data follows the switch.

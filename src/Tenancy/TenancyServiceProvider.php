@@ -22,7 +22,6 @@ use Kleinweb\Lib\Tenancy\Bootstrappers\CacheBootstrapper;
 use Kleinweb\Lib\Tenancy\Bootstrappers\ConfigBootstrapper;
 use Kleinweb\Lib\Tenancy\Contracts\BlogBootstrapper;
 use Kleinweb\Lib\Tenancy\Contracts\SiteBootstrapper;
-use Kleinweb\Lib\Tenancy\Discovery\Psr4Autoloader;
 use Kleinweb\Lib\Tenancy\Discovery\SiteManifest;
 use Throwable;
 use Webmozart\Assert\Assert;
@@ -32,11 +31,8 @@ use function count;
 use function get_current_blog_id;
 use function function_exists;
 use function is_array;
-use function is_dir;
 use function is_multisite;
 use function ms_is_switched;
-use function spl_autoload_register;
-use function str_starts_with;
 
 /**
  * Multisite support: per-site providers, config and commands.
@@ -54,9 +50,6 @@ use function str_starts_with;
  */
 final class TenancyServiceProvider extends ServiceProvider
 {
-    /** Whether the cross-site plugin autoload fallback has run. */
-    private static bool $siteAutoloadRegistered = false;
-
     public function register(): void
     {
         $this->app->singleton(SiteRepository::class);
@@ -142,63 +135,9 @@ final class TenancyServiceProvider extends ServiceProvider
         add_action('wp_update_site', $refresh);
         add_action('wp_delete_site', $refresh);
 
-        $this->registerSiteAutoloadFallback($sites);
-
         $this->app->booted(static function () use ($context): void {
             $context->announce();
         });
-    }
-
-    /**
-     * Make classes from every site plugin loadable, not only the active one.
-     *
-     * A queued job or a config value from another site may name a class in
-     * that site's plugin.  On the first miss under `App\Sites\`, register
-     * every site plugin's autoload map and retry.
-     */
-    private function registerSiteAutoloadFallback(SiteRepository $sites): void
-    {
-        $manifest = $this->app->make(SiteManifest::class);
-
-        try {
-            $prefix = $this->app->getNamespace() . 'Sites\\';
-        } catch (Throwable) {
-            return;
-        }
-
-        $report = $this->report(...);
-        $fallback = static function (string $class) use (
-            $prefix,
-            $sites,
-            $manifest,
-            $report,
-        ): void {
-            if (self::$siteAutoloadRegistered || !str_starts_with($class, $prefix)) {
-                return;
-            }
-
-            self::$siteAutoloadRegistered = true;
-
-            try {
-                foreach ($sites->all() as $site) {
-                    $key = $site->key();
-                    if ($key === null || !$key->isNamespaceable()) {
-                        continue;
-                    }
-
-                    $plugin = $manifest->pluginPath($key);
-                    if (is_dir($plugin)) {
-                        Psr4Autoloader::register($manifest->package($plugin, $key)['psr4']);
-                    }
-                }
-
-                Psr4Autoloader::load($class);
-            } catch (Throwable $e) {
-                $report($e);
-            }
-        };
-
-        spl_autoload_register($fallback);
     }
 
     /**

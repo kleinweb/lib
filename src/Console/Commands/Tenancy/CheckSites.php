@@ -7,6 +7,7 @@ declare(strict_types=1);
 
 namespace Kleinweb\Lib\Console\Commands\Tenancy;
 
+use Composer\Autoload\ClassLoader;
 use Composer\InstalledVersions;
 use Composer\Semver\VersionParser;
 use Illuminate\Console\Command;
@@ -15,23 +16,19 @@ use Illuminate\Foundation\Application;
 use Kleinweb\Lib\Database\Models\Site;
 use Kleinweb\Lib\Tenancy\Discovery\SiteManifest;
 use Kleinweb\Lib\Tenancy\SiteRepository;
-use Throwable;
 
+use function array_key_exists;
+use function array_keys;
 use function basename;
 use function class_exists;
 use function count;
-use function get_theme_root;
-use function glob;
 use function in_array;
 use function is_array;
 use function is_dir;
-use function is_file;
 use function is_string;
-use function json_decode;
 use function preg_match;
+use function reset;
 use function sprintf;
-
-use const GLOB_ONLYDIR;
 
 /**
  * Report multisite configuration problems; exits non-zero if any are found.
@@ -50,7 +47,7 @@ final class CheckSites extends Command
      *
      * @var string
      */
-    protected $description = 'Check site keys, site code, overlays and theme requirements';
+    protected $description = 'Check site keys, site code, overlays, autoloading and requirements';
 
     /** @var list<array{string, string, string}> */
     private array $problems = [];
@@ -66,7 +63,8 @@ final class CheckSites extends Command
         $this->checkKeys($sites);
         $this->checkOrphans($sites, $files, $app);
         $this->checkProviders($sites, $manifest, $app);
-        $this->checkThemeRequirements($files);
+        $this->checkAutoload($sites, $manifest);
+        $this->checkRequirements($sites, $manifest);
         $this->checkRoutes($files, $app);
 
         if ($this->problems === []) {
@@ -170,45 +168,72 @@ final class CheckSites extends Command
                     ));
                 }
             }
-
-            $plugin = $manifest->pluginPath($key);
-            if (!$key->isNamespaceable() || !is_file("{$plugin}/composer.json")) {
-                continue;
-            }
-
-            foreach ($manifest->package($plugin, $key)['providers'] as $provider) {
-                if (!class_exists($provider)) {
-                    $this->problem('provider', $plugin, "provider {$provider} does not exist");
-                }
-            }
         }
 
-        foreach (glob(get_theme_root() . '/*', GLOB_ONLYDIR) ?: [] as $theme) {
-            foreach ($manifest->package($theme)['providers'] as $provider) {
+        foreach ($manifest->packageDirectories($sites) as $directory) {
+            foreach ($manifest->providers($directory) as $provider) {
                 if (!class_exists($provider)) {
-                    $this->problem('provider', $theme, "provider {$provider} does not exist");
+                    $this->problem('provider', $directory, "provider {$provider} does not exist");
                 }
             }
         }
     }
 
     /**
-     * Every theme's `require` is installed in the root project.
+     * Themes and site plugins are autoloaded by Composer, without side effects.
+     *
+     * Their classes load on every site, which is harmless; per-site behaviour
+     * comes from registering providers.  Composer's `autoload.files`, though,
+     * run on every request for every site, so they are not allowed.
      */
-    private function checkThemeRequirements(Filesystem $files): void
+    private function checkAutoload(SiteRepository $sites, SiteManifest $manifest): void
     {
-        $parser = class_exists(VersionParser::class) ? new VersionParser() : null;
+        $loaders = ClassLoader::getRegisteredLoaders();
+        $loader = reset($loaders);
+        $known = ($loader instanceof ClassLoader) ? $loader->getPrefixesPsr4() : [];
 
-        foreach (glob(get_theme_root() . '/*/composer.json') ?: [] as $path) {
-            try {
-                $json = json_decode($files->get($path), true, flags: \JSON_THROW_ON_ERROR);
-            } catch (Throwable) {
-                $this->problem('theme', $path, 'composer.json is not valid JSON');
+        foreach ($manifest->packageDirectories($sites) as $directory) {
+            $composer = $manifest->composerJson($directory);
+            if ($composer === null) {
+                $this->problem('autoload', $directory, 'composer.json is not valid JSON');
 
                 continue;
             }
 
-            $require = is_array($json) ? ($json['require'] ?? []) : [];
+            $autoload = is_array($composer['autoload'] ?? null) ? $composer['autoload'] : [];
+
+            if (($autoload['files'] ?? []) !== []) {
+                $this->problem(
+                    'autoload',
+                    $directory,
+                    'autoload.files run on every site; use psr-4 or classmap',
+                );
+            }
+
+            $psr4 = is_array($autoload['psr-4'] ?? null) ? $autoload['psr-4'] : [];
+            foreach (array_keys($psr4) as $prefix) {
+                if (!array_key_exists($prefix, $known)) {
+                    $this->problem('autoload', $directory, sprintf(
+                        '%s is not autoloaded; include this composer.json with '
+                        . 'wikimedia/composer-merge-plugin and run composer update',
+                        $prefix,
+                    ));
+                }
+            }
+        }
+    }
+
+    /**
+     * Every theme's and site plugin's `require` is installed in the project.
+     */
+    private function checkRequirements(SiteRepository $sites, SiteManifest $manifest): void
+    {
+        $parser = class_exists(VersionParser::class) ? new VersionParser() : null;
+
+        foreach ($manifest->packageDirectories($sites) as $directory) {
+            $json = $manifest->composerJson($directory) ?? [];
+            $require = $json['require'] ?? [];
+
             foreach (is_array($require) ? $require : [] as $package => $constraint) {
                 $platform = '/^(php|ext-|lib-|composer-)/';
                 if (!is_string($package) || preg_match($platform, $package) === 1) {
@@ -216,7 +241,7 @@ final class CheckSites extends Command
                 }
 
                 if (!InstalledVersions::isInstalled($package)) {
-                    $this->problem('theme', $path, "{$package} is not installed in the project");
+                    $this->problem('require', $directory, "{$package} is not installed");
 
                     continue;
                 }
@@ -226,7 +251,7 @@ final class CheckSites extends Command
                     && is_string($constraint)
                     && !InstalledVersions::satisfies($parser, $package, $constraint)
                 ) {
-                    $this->problem('theme', $path, sprintf(
+                    $this->problem('require', $directory, sprintf(
                         '%s %s does not satisfy %s',
                         $package,
                         InstalledVersions::getPrettyVersion($package) ?? '?',
