@@ -91,6 +91,69 @@ implementation for WordPress users.
 `Tenancy\Site` provides helpers for WordPress multisite: site URLs, hostnames,
 original host detection (via `orig_host` site meta), and domain checks.
 
+`Database\Models\Site` wraps `WP_Site` and its blogmeta. Each site is
+identified by a `Tenancy\SiteKey` stored as the `site_key` blogmeta
+(see `Tenancy\SiteMeta`); blog IDs differ between environments, keys do not.
+`Tenancy\SiteRepository` looks sites up by key or ID.
+
+`Tenancy\TenancyServiceProvider` is registered through `extra.acorn.providers`
+and does nothing on single-site installs. On multisite, from an application
+`booting` callback (after all configured providers register, before any
+boot), it:
+
+- registers the request site's providers via `Tenancy\SiteLoader`, least
+  specific first: `app/Sites/{Key}/Providers`, the active site plugin
+  `plugins/{key}/`, `providers` in `config/sites/{key}/app.php`, then the
+  parent theme's and child theme's `composer.json` providers. Later bindings
+  win. Also attaches `app/Sites/{Key}/View/Composers`, registers
+  `app/Sites/{Key}/Console/Commands`, prepends `resources/views/sites/{key}`,
+  and loads `routes/sites/{key}.php`.
+- applies the site's config overlay (`Tenancy\Bootstrappers\ConfigBootstrapper`
+  over `Tenancy\Config\ConfigOverlay`): `config/sites/{key}/*.php` loads as
+  `sites.{key}.*` and overlays the config file of the same name, leaf by leaf.
+  Bootstrappers are reverted and re-applied on every `switch_blog`
+  (`Tenancy\SiteContext`); providers are not.
+
+#### Class loading
+
+All site, theme and site-plugin classes are autoloaded by Composer on every
+site: `app/Sites/*` through the project's `App\` mapping, themes and site
+plugins through `wikimedia/composer-merge-plugin` including their
+`composer.json`. The library adds no autoloaders. Loading a class has no side
+effects; site-specific behaviour comes only from which providers
+`SiteLoader` registers. Theme and site-plugin `composer.json` files must not
+use `autoload.files`, which would run on every site; `site:check` reports
+it, along with PSR-4 prefixes Composer does not know.
+
+#### `switch_to_blog()` contract
+
+Multisite support mirrors Core: code is per process, data follows the switch.
+
+| Follows every `switch_to_blog()` / `restore_current_blog()` | Fixed to the site WordPress loaded |
+| --- | --- |
+| WordPress tables, options, object cache (Core) | Providers and container bindings |
+| Laravel cache, per blog (`Tenancy\Bootstrappers\CacheBootstrapper`) | Routes, view paths, view composers, commands |
+| Config overlay for keyed sites (`ConfigBootstrapper`) | Objects that copied config when built (e.g. acorn-mail) |
+| `cache.prefix` / `session.cookie` (Acorn) | Post types and taxonomies (Core never re-registers them) |
+
+- `Tenancy\SiteContext::sync()` runs on `switch_blog` at priority 20, after
+  Acorn's handler. Nothing it runs may throw: Core has already switched its
+  globals, so failures (including in `SiteSwitched` listeners) are reported
+  through the exception handler and skipped.
+- It also runs for Core's internal switches (`get_home_url($id)`,
+  `get_blog_option()`, `wp_initialize_site()`), so blog bootstrappers and
+  `SiteSwitched` listeners must be cheap and idempotent.
+- `Database\Models\Site::run()` restores the starting blog even if the
+  callback throws or leaves extra switches unrestored. Console commands that
+  loop over sites use `Console\Concerns\InteractsWithSites::forEachSite()`;
+  work that needs another site's bindings uses `site:run`.
+- Code that sets a config key a site overlay also sets, while switched, loses
+  that change on the next switch.
+
+Discovery results can be cached with `site:cache` (`Tenancy\Discovery\SiteManifest`).
+Commands: `site:list`, `site:assign-keys`, `site:run`, `site:check`,
+`site:cache`, `site:clear`, `site:demap-domains`, `make:site`.
+
 ### Key Support Classes
 
 - `Support\Plugin` — readonly DTO for plugin metadata (basename, path, URL)
