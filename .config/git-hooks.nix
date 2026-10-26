@@ -19,6 +19,7 @@
           markdownlint.enable = true;
           markdownlint.excludes = [
             # Auto-generated
+            "^\.changeset/.+\.md$"
             "CHANGELOG.md"
             "CLAUDE.md"
           ];

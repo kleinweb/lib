@@ -1,8 +1,7 @@
 #! yaml-language-server: $schema=https://json.schemastore.org/yamllint.json
 
-# SPDX-FileCopyrightText: 2024-2026 Temple University <kleinweb@temple.edu>
+# SPDX-FileCopyrightText: (C) 2024-2026 Temple University <kleinweb@temple.edu>
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 ---
 extends: default
 
