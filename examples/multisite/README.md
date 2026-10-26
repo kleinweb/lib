@@ -1,21 +1,27 @@
 # Example multisite project
 
 A minimal project showing `kleinweb/lib` tenancy on a WordPress multisite
-network. It has the layout the Klein projects use: Core at the project root,
-`wp-content/` beside it, a project mu-plugin that boots Acorn, and themes and
-site plugins in the same repository.
+network, in the layout of `kleinweb/project-template`: Core at the project
+root, `composer.json` and `wp-config.php` beside it, and the application in a
+network-wide mu-plugin, `wp-content/mu-plugins/example/`, which is also
+Acorn's base path (`ACORN_BASEPATH`). Themes and site plugins live in the
+same repository.
 
-It is example code, not a runnable install: Core, `wp-config.php` and
-`vendor/` are left out.
+It is example code, not a runnable install: Core, `vendor/` and most of
+`wp-config.php` are left out.
 
 ```text
 composer.json                    merge plugin includes themes and site plugins
-app/                             shared application code (App\)
-config/                          shared config (post-types, mail, tenancy)
-resources/views/                 shared views
-routes/web.php                   shared routes
+wp-config.php                    excerpt: ACORN_BASEPATH and multisite
 wp-content/
-  mu-plugins/app.php             boots Acorn; nothing site-specific
+  mu-plugins/
+    001-require-plugins.php      loads the application plugin
+    example/                     the application: shared code, Acorn's home
+      example.php                boots Acorn; nothing site-specific
+      app/                       App\ (shared classes)
+      config/                    shared config (post-types, mail, tenancy)
+      resources/views/           shared views
+      routes/web.php             shared routes
   plugins/
     kleinweb-site-news/          the "news" site's code and config
     kleinweb-site-events/        the "events" site's config only
@@ -57,7 +63,10 @@ application.
    wp acorn site:assign-keys --id=3 --key=events
    ```
 
-3. Activate each site plugin on its own site, never network-wide:
+3. Activate each site plugin on its own site. Network activation is refused
+   (`wp_die()` for an interactive activation; a silent one is undone and
+   reported), and a site plugin that is network-active anyway applies
+   nowhere and fails `site:check`:
 
    ```sh
    wp --url=news.example.test plugin activate kleinweb-site-news
@@ -75,8 +84,8 @@ New site plugins come from `wp acorn make:site <key>`.
 
 ## What happens on a request
 
-WordPress loads plugins and the theme as usual. The mu-plugin boots Acorn on
-`after_setup_theme` with the shared providers. After every shared provider
+WordPress loads plugins and the theme as usual. The application mu-plugin
+boots Acorn on `after_setup_theme` with the shared providers. After every shared provider
 has registered and before any boots, `TenancyServiceProvider`:
 
 1. registers the requested site's providers, least specific first, so later
@@ -117,7 +126,8 @@ loading a class does nothing. Site plugins and themes must not use
 A console process is for one site, like a request: `wp --url=news.example.test
 acorn …` has the news providers, and `wp acorn …` has the main site's.
 
-- `content:report` (shared, `app/Console/Commands/ContentReport.php`) runs
+- `content:report` (shared,
+  `wp-content/mu-plugins/example/app/Console/Commands/ContentReport.php`) runs
   once and visits every site with `forEachSite()`. Inside its callback,
   WordPress data, the per-blog cache, the visited site's config overlay and
   its post types follow the switch. Container bindings do not: `Masthead` is
@@ -136,9 +146,9 @@ site's content.
 
 ## Post types
 
-`config/post-types.php` replaces `roots/acorn-post-types`, which registers
-one site's types for the whole process. The format is the same; remove that
-package if a project has it (`site:check` flags it).
+The application's `config/post-types.php` takes the place of
+`roots/acorn-post-types`, which registers one site's types for the whole
+process; the format is the same. Do not install that package alongside.
 
 In a site overlay:
 

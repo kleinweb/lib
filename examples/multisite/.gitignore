@@ -1,5 +1,5 @@
 /vendor/
-/storage/
+/wp-content/cache/
 # WordPress Core at the project root
 /wp-admin/
 /wp-includes/
