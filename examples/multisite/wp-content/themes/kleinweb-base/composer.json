@@ -1,0 +1,22 @@
+{
+  "name": "kleinweb/kleinweb-base",
+  "description": "Parent theme. Depends on Illuminate only, not on Acorn or kleinweb/lib.",
+  "type": "wordpress-theme",
+  "license": "GPL-3.0-or-later",
+  "require": {
+    "illuminate/support": "^13.0",
+    "illuminate/view": "^13.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Kleinweb\\Themes\\Base\\": "src/"
+    }
+  },
+  "extra": {
+    "acorn": {
+      "providers": [
+        "Kleinweb\\Themes\\Base\\ThemeServiceProvider"
+      ]
+    }
+  }
+}

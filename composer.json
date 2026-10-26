@@ -25,6 +25,7 @@
     "php": "~8.4",
     "alleyinteractive/wp-bulk-task": "^1.0",
     "archtechx/enums": "^1.1",
+    "johnbillion/extended-cpts": "^5.0",
     "league/uri": "^7.0",
     "league/uri-components": "^7.0",
     "monolog/monolog": "^3.9",
@@ -75,6 +76,12 @@
       "wp-content/mu-plugins/{$name}/": ["type:wordpress-muplugin"],
       "wp-content/plugins/{$name}/": ["type:wordpress-plugin"],
       "wp-content/themes/{$name}/": ["type:wordpress-theme"]
+    },
+    "acorn": {
+      "providers": [
+        "Kleinweb\\Lib\\ContentTypes\\ContentTypesServiceProvider",
+        "Kleinweb\\Lib\\Tenancy\\TenancyServiceProvider"
+      ]
     }
   },
   "scripts": {
