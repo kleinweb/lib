@@ -1,0 +1,21 @@
+{
+  "name": "kleinweb/kleinweb-news",
+  "description": "Child theme of kleinweb-base. Depends on Illuminate only.",
+  "type": "wordpress-theme",
+  "license": "GPL-3.0-or-later",
+  "require": {
+    "illuminate/support": "^13.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "Kleinweb\\Themes\\News\\": "src/"
+    }
+  },
+  "extra": {
+    "acorn": {
+      "providers": [
+        "Kleinweb\\Themes\\News\\ThemeServiceProvider"
+      ]
+    }
+  }
+}

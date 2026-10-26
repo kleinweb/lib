@@ -1,0 +1,11 @@
+/vendor/
+/storage/
+# WordPress Core at the project root
+/wp-admin/
+/wp-includes/
+/wp-*.php
+!/wp-config.php
+/index.php
+/xmlrpc.php
+/license.txt
+/readme.html
