@@ -140,7 +140,8 @@ final class DemapDomains extends Command
 
             if ($replace) {
                 $this->line("{$dryRunPrefix} Performing database replacements for URL change...");
-                $result = Process::run("wp {$wpArgs}");
+
+                Process::run("wp {$wpArgs}");
             } else {
                 $followupCommands[] = sprintf('wp @%s %s', $cmdEnv, $wpArgs);
             }
