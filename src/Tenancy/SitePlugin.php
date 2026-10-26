@@ -29,8 +29,9 @@ use function substr;
  *
  * WordPress loads the plugin as usual; the application registers its
  * providers and applies its config only on a request for that site, and only
- * while the plugin is active there.  A site plugin activated on another site
- * is ignored, so one site can never load another's services.
+ * while the plugin is activated there.  A site plugin activated on another
+ * site is ignored, so one site can never load another's services.  Network
+ * activation is refused ({@see SitePluginGuard}) and never counts.
  */
 final class SitePlugin
 {
@@ -70,8 +71,19 @@ final class SitePlugin
     }
 
     /**
-     * Whether the site's plugin is active on the current blog, either on its
-     * own or network-wide.
+     * Whether a plugin basename (`dir/file.php`) belongs to a site plugin.
+     */
+    public static function isSitePlugin(string $basename): bool
+    {
+        return str_starts_with($basename, self::PREFIX);
+    }
+
+    /**
+     * Whether the site's plugin is active on the current blog.
+     *
+     * Only per-site activation counts.  A site plugin must never be
+     * network-activated (the application itself is the network-wide code);
+     * if one is, it applies nowhere, and `site:check` reports it.
      *
      * Reads the current blog's options, so it follows `switch_to_blog()`.
      */
@@ -81,20 +93,45 @@ final class SitePlugin
     }
 
     /**
-     * Directories of every plugin active on the current blog.
+     * Directories of the plugins activated on the current blog itself, not
+     * network-wide.
      *
      * @return list<string>
      */
     public static function activeDirectories(): array
     {
         $active = get_option('active_plugins', []);
+
+        return self::directories(is_array($active) ? $active : []);
+    }
+
+    /**
+     * Site plugins that are network-activated, by basename.
+     *
+     * @return list<string>
+     */
+    public static function networkActivated(): array
+    {
         $network = get_site_option('active_sitewide_plugins', []);
 
+        $plugins = [];
+        foreach (is_array($network) ? array_keys($network) : [] as $plugin) {
+            if (is_string($plugin) && self::isSitePlugin($plugin)) {
+                $plugins[] = $plugin;
+            }
+        }
+
+        return $plugins;
+    }
+
+    /**
+     * @param array<array-key, mixed> $plugins
+     *
+     * @return list<string>
+     */
+    private static function directories(array $plugins): array
+    {
         $directories = [];
-        $plugins = [
-            ...(is_array($active) ? $active : []),
-            ...(is_array($network) ? array_keys($network) : []),
-        ];
 
         foreach ($plugins as $plugin) {
             if (!is_string($plugin)) {
@@ -108,23 +145,5 @@ final class SitePlugin
         }
 
         return $directories;
-    }
-
-    /**
-     * Whether a site plugin is network-activated, which makes WordPress load
-     * its PHP on every site.  Its providers and config still apply only to
-     * its own site.
-     */
-    public static function isNetworkActive(SiteKey $key): bool
-    {
-        $network = get_site_option('active_sitewide_plugins', []);
-
-        foreach (is_array($network) ? array_keys($network) : [] as $plugin) {
-            if (is_string($plugin) && str_starts_with($plugin, self::directory($key) . '/')) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }

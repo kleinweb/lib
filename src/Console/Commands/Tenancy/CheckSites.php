@@ -67,7 +67,6 @@ final class CheckSites extends Command
         $this->checkProviders($sites, $manifest);
         $this->checkAutoload($sites, $manifest);
         $this->checkRequirements($sites, $manifest);
-        $this->checkPackages();
         $this->checkRoutes($sites, $files, $app);
 
         if ($this->problems === []) {
@@ -110,8 +109,8 @@ final class CheckSites extends Command
     }
 
     /**
-     * Site plugins: each matches a site, is active only where it belongs,
-     * and is active wherever it carries config.
+     * Site plugins: none is network-activated, each matches a site, is active
+     * only where it belongs, and is active wherever it carries config.
      */
     private function checkSitePlugins(SiteRepository $sites, Filesystem $files): void
     {
@@ -134,6 +133,11 @@ final class CheckSites extends Command
             }
         }
 
+        foreach (SitePlugin::networkActivated() as $plugin) {
+            $this->problem('plugin', $plugin, 'is network-activated, which is not allowed '
+                . 'and applies it nowhere; network-deactivate it and activate it on its site');
+        }
+
         foreach ($sites->all() as $site) {
             $key = $site->key();
             $active = $site->run(static fn (): array => SitePlugin::activeDirectories());
@@ -150,11 +154,6 @@ final class CheckSites extends Command
 
             if ($key === null) {
                 continue;
-            }
-
-            if ($site->run(static fn (): bool => SitePlugin::isNetworkActive($key))) {
-                $this->problem('plugin', SitePlugin::path($key), 'is network-activated; '
-                    . 'WordPress then loads its PHP on every site; activate it on its site only');
             }
 
             $isActive = in_array(SitePlugin::directory($key), $active, true);
@@ -261,20 +260,6 @@ final class CheckSites extends Command
                     ));
                 }
             }
-        }
-    }
-
-    /**
-     * Packages this library replaces, which would register things twice.
-     */
-    private function checkPackages(): void
-    {
-        if (InstalledVersions::isInstalled('roots/acorn-post-types')) {
-            $this->problem(
-                'package',
-                'roots/acorn-post-types',
-                'kleinweb/lib registers post types per site; remove this package',
-            );
         }
     }
 

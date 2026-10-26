@@ -130,6 +130,8 @@ final class TenancyServiceProvider extends ServiceProvider
 
         $context->initialize($site, get_current_blog_id());
 
+        (new SitePluginGuard($this->report(...)))->register();
+
         // Acorn's own handler (priority 10) sets `cache.prefix` and
         // `session.cookie` for the new blog first.
         add_action('switch_blog', static function (mixed $blogId) use ($context): void {

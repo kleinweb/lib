@@ -102,10 +102,12 @@ and does nothing on single-site installs (beyond enabling Laravel's
 
 #### Where site code lives
 
-The application (`app/`, `config/`, the project mu-plugin that boots Acorn)
-holds only code shared by every site. Everything specific to one site lives
-in its theme or in its site plugin, `wp-content/plugins/kleinweb-site-{key}/`
-(`Tenancy\SitePlugin`):
+The application is the network-wide mu-plugin
+`wp-content/mu-plugins/{project}/` (Acorn's base path, set as
+`ACORN_BASEPATH` in `wp-config.php`, with `app/`, `config/`, `resources/`,
+`routes/`), as in `kleinweb/project-template`. It holds only code shared by
+every site. Everything specific to one site lives in its theme or in its
+site plugin, `wp-content/plugins/kleinweb-site-{key}/` (`Tenancy\SitePlugin`):
 
 - providers, declared in the plugin's or theme's `composer.json`
   (`extra.acorn.providers`); site plugin providers usually extend
@@ -118,18 +120,24 @@ in its theme or in its site plugin, `wp-content/plugins/kleinweb-site-{key}/`
 WordPress loads plugins and themes as usual. From an application `booting`
 callback (after all configured providers register, before any boot),
 `Tenancy\SiteLoader` registers, least specific first so later bindings win:
-the site plugin's providers (only if it is active on this site and named for
-this site's key), then the active parent theme's, then the child theme's.
+the site plugin's providers (only if it is activated on this site and named
+for this site's key), then the active parent theme's, then the child theme's.
 `Tenancy\Bootstrappers\ConfigBootstrapper` applies the site plugin's config
 while it is active. One site therefore never loads another site's services or
 config, even if a site plugin is activated on the wrong site.
+
+A site plugin must never be network-activated. `Tenancy\SitePluginGuard`
+refuses it (`wp_die()` on `activate_plugin`; a silent addition to
+`active_sitewide_plugins` is removed and reported), network activation never
+counts as active, and `site:check` fails on one already network-active.
 
 `examples/multisite/` is a complete example project.
 
 #### Post types and taxonomies
 
-`ContentTypes\ContentTypesServiceProvider` replaces `roots/acorn-post-types`
-with the same `config/post-types.php` format (Extended CPTs arguments). Site
+`ContentTypes\ContentTypesServiceProvider` takes the place of
+`roots/acorn-post-types` (do not install both), with the same
+`config/post-types.php` format (Extended CPTs arguments). Site
 plugins add, change or remove (`null`) types in their own
 `config/post-types.php`. `ContentTypes\ContentTypeRegistrar::runFor()`, used
 by `forEachSite()`, temporarily switches registrations to the visited site's

@@ -7,22 +7,19 @@ declare(strict_types=1);
 
 namespace Kleinweb\Lib\ContentTypes;
 
-use Illuminate\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 
 use function add_action;
 
 /**
- * Registers post types and taxonomies from `config/post-types.php`.
+ * Registers post types and taxonomies from `config/post-types.php`, per site.
  *
- * Replaces `roots/acorn-post-types`, using the same config format.  When that
- * package is also installed it is left in charge, so nothing is registered
- * twice; `site:check` reports the overlap.
+ * Takes the place of `roots/acorn-post-types`, which registers one site's
+ * types for the whole process; the config format is the same.  Do not
+ * install both.
  */
 final class ContentTypesServiceProvider extends ServiceProvider
 {
-    public const string ACORN_POST_TYPES = 'Roots\AcornPostTypes\AcornPostTypesServiceProvider';
-
     public function register(): void
     {
         $this->app->singleton(ContentTypeRegistrar::class);
@@ -30,14 +27,7 @@ final class ContentTypesServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        $acornPostTypes = ($this->app instanceof Application)
-            ? $this->app->getProvider(self::ACORN_POST_TYPES)
-            : null;
-        if ($acornPostTypes !== null) {
-            return;
-        }
-
-        // Priority 100, as in acorn-post-types, so other plugins' types exist.
+        // Late on `init`, so types registered by other plugins already exist.
         add_action('init', function (): void {
             $this->app->make(ContentTypeRegistrar::class)->registerAll();
         }, 100);
