@@ -11,6 +11,8 @@ use Illuminate\Contracts\Config\Repository;
 use Kleinweb\Lib\Database\Models\Site;
 use Kleinweb\Lib\Tenancy\Config\ConfigOverlay;
 use Kleinweb\Lib\Tenancy\Contracts\SiteBootstrapper;
+use Kleinweb\Lib\Tenancy\Discovery\SiteManifest;
+use Kleinweb\Lib\Tenancy\SitePlugin;
 
 use function is_array;
 use function is_string;
@@ -20,16 +22,15 @@ use function is_string;
  *
  * Sources, later ones winning:
  *
- * 1. `config/sites/{key}/*.php`.  Laravel loads config subdirectories as
- *    nested keys, so `config/sites/news-hub/mail.php` is the config value
- *    `sites.news-hub.mail` and overlays `mail`.  These files are included in
- *    `config:cache`.
+ * 1. The site plugin's `config/*.php`, only while the plugin is active on
+ *    the site.  `wp-content/plugins/news-hub/config/mail.php` overlays
+ *    `mail`.
  * 2. Blogmeta mapped to config keys by `tenancy.meta_config`, for values
  *    editors change without a deploy, e.g.
  *    `['analytics_id' => 'services.analytics.id']`.
  *
- * `app.providers` is never overlaid; site providers are registered by
- * {@see \Kleinweb\Lib\Tenancy\SiteLoader}.
+ * `app.providers` is never overlaid: site providers come from the site
+ * plugin's `composer.json`.
  */
 final class ConfigBootstrapper implements SiteBootstrapper
 {
@@ -38,8 +39,10 @@ final class ConfigBootstrapper implements SiteBootstrapper
 
     private readonly ConfigOverlay $overlay;
 
-    public function __construct(private readonly Repository $config)
-    {
+    public function __construct(
+        private readonly Repository $config,
+        private readonly SiteManifest $manifest,
+    ) {
         $this->overlay = new ConfigOverlay($config);
     }
 
@@ -52,8 +55,9 @@ final class ConfigBootstrapper implements SiteBootstrapper
             return;
         }
 
-        $files = $this->config->get("sites.{$key->value}", []);
-        $leaves = is_array($files) ? ConfigOverlay::leaves($files) : [];
+        // Runs after the switch, so this reads the target site's plugins.
+        $files = SitePlugin::isActive($key) ? $this->manifest->config($key) : [];
+        $leaves = ConfigOverlay::leaves($files);
 
         foreach (self::IGNORED as $ignored) {
             unset($leaves[$ignored]);

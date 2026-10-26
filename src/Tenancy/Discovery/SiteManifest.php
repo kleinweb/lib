@@ -7,13 +7,12 @@ declare(strict_types=1);
 
 namespace Kleinweb\Lib\Tenancy\Discovery;
 
-use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Application;
-use Illuminate\Support\ServiceProvider;
 use Kleinweb\Lib\Tenancy\SiteKey;
+use Kleinweb\Lib\Tenancy\SitePlugin;
 use Kleinweb\Lib\Tenancy\SiteRepository;
-use Roots\Acorn\View\Composer;
+use Symfony\Component\Finder\Finder;
 use Throwable;
 
 use function array_filter;
@@ -21,29 +20,36 @@ use function array_map;
 use function array_values;
 use function glob;
 use function is_array;
+use function is_dir;
 use function is_file;
+use function is_scalar;
 use function is_string;
 use function json_decode;
 use function realpath;
 use function rtrim;
+use function str_replace;
+use function substr;
 use function var_export;
 
 use const GLOB_ONLYDIR;
 use const JSON_THROW_ON_ERROR;
 
 /**
- * Discovers which providers, view composers and commands belong to which
- * site, theme and site plugin, with an optional cache.
+ * Reads what site plugins and themes declare, with an optional cache.
  *
- * Discovery only lists class names; it never loads or registers anything.
- * Every class is autoloaded by Composer for every site: `app/Sites/*` through
- * the project's `App\` mapping, themes and site plugins through
- * `wikimedia/composer-merge-plugin`.  Loading a class has no side effects;
- * what is site-specific is registering providers, decided per request by
- * {@see \Kleinweb\Lib\Tenancy\SiteLoader}.
+ * - Providers: `extra.acorn.providers`, or `extra.laravel.providers`, in a
+ *   site plugin's or theme's `composer.json`, matching Acorn's own package
+ *   discovery.
+ * - Config: a site plugin's `config/*.php`.
  *
- * @phpstan-type SiteCode array{providers: list<string>, composers: list<string>, commands: list<string>}
- * @phpstan-type Manifest array{sites: array<string, SiteCode>, packages: array<string, list<string>>}
+ * Nothing here loads or registers anything, and nothing depends on which
+ * site is active, so one cache (`site:cache`) serves the whole network.
+ * Which declarations apply to a request is decided by
+ * {@see \Kleinweb\Lib\Tenancy\SiteLoader} and
+ * {@see \Kleinweb\Lib\Tenancy\Bootstrappers\ConfigBootstrapper}.
+ *
+ * @phpstan-type SiteConfig array<string, array<array-key, mixed>>
+ * @phpstan-type Manifest array{packages: array<string, list<string>>, config: array<string, SiteConfig>}
  */
 final class SiteManifest
 {
@@ -52,11 +58,11 @@ final class SiteManifest
 
     private bool $cacheLoaded = false;
 
-    /** @var array<string, SiteCode> */
-    private array $sites = [];
-
     /** @var array<string, list<string>> */
     private array $packages = [];
+
+    /** @var array<string, SiteConfig> */
+    private array $config = [];
 
     public function __construct(
         private readonly Application $app,
@@ -69,46 +75,7 @@ final class SiteManifest
     }
 
     /**
-     * Root namespace for a site's application code, e.g. `App\Sites\NewsHub\`.
-     */
-    public function siteNamespace(SiteKey $key): string
-    {
-        return $this->app->getNamespace() . 'Sites\\' . $key->studly() . '\\';
-    }
-
-    /**
-     * Directory for a site's application code, e.g. `app/Sites/NewsHub`.
-     */
-    public function sitePath(SiteKey $key): string
-    {
-        return $this->app->path('Sites/' . $key->studly());
-    }
-
-    public function pluginPath(SiteKey $key): string
-    {
-        return \constant('WP_PLUGIN_DIR') . '/' . $key->value;
-    }
-
-    /**
-     * Providers, view composers and commands under `app/Sites/{Key}`.
-     *
-     * @return SiteCode
-     */
-    public function site(SiteKey $key): array
-    {
-        $cached = $this->cache()['sites'][$key->value] ?? null;
-        if ($cached !== null) {
-            return $cached;
-        }
-
-        return $this->sites[$key->value] ??= $this->discoverSite($key);
-    }
-
-    /**
-     * Providers declared by a theme or site plugin.
-     *
-     * Read from `extra.acorn.providers`, or `extra.laravel.providers`, in the
-     * directory's `composer.json`, matching Acorn's own package discovery.
+     * Providers declared by a site plugin or theme directory.
      *
      * @return list<string>
      */
@@ -127,7 +94,26 @@ final class SiteManifest
     }
 
     /**
-     * The parsed `composer.json` of a theme or site plugin, if it has one.
+     * Config overlays from a site plugin's `config/` directory, by name.
+     *
+     * `config/mail.php` overlays `mail`; a file in a subdirectory is named
+     * the way Laravel names nested config, `config/services/stripe.php`
+     * becoming `services.stripe`.
+     *
+     * @return SiteConfig
+     */
+    public function config(SiteKey $key): array
+    {
+        $cached = $this->cache()['config'][$key->value] ?? null;
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        return $this->config[$key->value] ??= self::readConfig(SitePlugin::configPath($key));
+    }
+
+    /**
+     * The parsed `composer.json` of a site plugin or theme, if it has one.
      *
      * @return array<array-key, mixed>|null
      */
@@ -148,7 +134,8 @@ final class SiteManifest
     }
 
     /**
-     * Every theme and site-plugin directory that has a `composer.json`.
+     * Every theme, and every site plugin of a keyed site, with a
+     * `composer.json`.
      *
      * @return list<string>
      */
@@ -159,7 +146,7 @@ final class SiteManifest
         foreach ($sites->all() as $site) {
             $key = $site->key();
             if ($key !== null) {
-                $directories[] = $this->pluginPath($key);
+                $directories[] = SitePlugin::path($key);
             }
         }
 
@@ -170,26 +157,31 @@ final class SiteManifest
     }
 
     /**
-     * Discover everything and write the cache file.
+     * Read every declaration and write the cache file.
      */
     public function write(SiteRepository $sites): string
     {
         $this->cached = null;
         $this->cacheLoaded = true;
 
-        $manifest = ['sites' => [], 'packages' => []];
-
-        foreach ($sites->all() as $site) {
-            $key = $site->key();
-            if ($key !== null && $key->isNamespaceable()) {
-                $manifest['sites'][$key->value] = $this->discoverSite($key);
-            }
-        }
+        $manifest = ['packages' => [], 'config' => []];
 
         foreach ($this->packageDirectories($sites) as $directory) {
             $manifest['packages'][$directory] = self::declaredProviders(
                 $this->composerJson($directory) ?? [],
             );
+        }
+
+        foreach ($sites->all() as $site) {
+            $key = $site->key();
+            if ($key === null) {
+                continue;
+            }
+
+            $config = self::readConfig(SitePlugin::configPath($key));
+            if ($config !== [] && self::exportable($config)) {
+                $manifest['config'][$key->value] = $config;
+            }
         }
 
         $path = $this->cachePath();
@@ -208,34 +200,45 @@ final class SiteManifest
     }
 
     /**
-     * @return SiteCode
+     * @return SiteConfig
      */
-    private function discoverSite(SiteKey $key): array
+    private static function readConfig(string $directory): array
     {
-        if (!$key->isNamespaceable()) {
-            return ['providers' => [], 'composers' => [], 'commands' => []];
+        if (!is_dir($directory)) {
+            return [];
         }
 
-        $path = $this->sitePath($key);
-        $namespace = $this->siteNamespace($key);
+        $config = [];
+        $finder = Finder::create()->files()->name('*.php')->in($directory)->sortByName();
 
-        return [
-            'providers' => ClassFinder::find(
-                "{$path}/Providers",
-                "{$namespace}Providers\\",
-                ServiceProvider::class,
-            ),
-            'composers' => ClassFinder::find(
-                "{$path}/View/Composers",
-                "{$namespace}View\\Composers\\",
-                Composer::class,
-            ),
-            'commands' => ClassFinder::find(
-                "{$path}/Console/Commands",
-                "{$namespace}Console\\Commands\\",
-                Command::class,
-            ),
-        ];
+        foreach ($finder as $file) {
+            $name = str_replace('/', '.', substr($file->getRelativePathname(), 0, -4));
+            $values = require $file->getPathname();
+
+            if (is_array($values)) {
+                $config[$name] = $values;
+            }
+        }
+
+        return $config;
+    }
+
+    /**
+     * Whether a value survives `var_export()`, so it can go in the cache file.
+     */
+    private static function exportable(mixed $value): bool
+    {
+        if (is_array($value)) {
+            foreach ($value as $item) {
+                if (!self::exportable($item)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        return $value === null || is_scalar($value);
     }
 
     /**
@@ -268,7 +271,7 @@ final class SiteManifest
             $this->cached = is_array($loaded) ? self::validate($loaded) : null;
         }
 
-        return $this->cached ?? ['sites' => [], 'packages' => []];
+        return $this->cached ?? ['packages' => [], 'config' => []];
     }
 
     /**
@@ -280,23 +283,25 @@ final class SiteManifest
      */
     private static function validate(array $loaded): array
     {
-        $manifest = ['sites' => [], 'packages' => []];
-
-        $sites = $loaded['sites'] ?? [];
-        foreach (is_array($sites) ? $sites : [] as $key => $code) {
-            if (is_string($key) && is_array($code)) {
-                $manifest['sites'][$key] = [
-                    'providers' => self::strings($code['providers'] ?? []),
-                    'composers' => self::strings($code['composers'] ?? []),
-                    'commands' => self::strings($code['commands'] ?? []),
-                ];
-            }
-        }
+        $manifest = ['packages' => [], 'config' => []];
 
         $packages = $loaded['packages'] ?? [];
         foreach (is_array($packages) ? $packages : [] as $directory => $providers) {
             if (is_string($directory)) {
                 $manifest['packages'][$directory] = self::strings($providers);
+            }
+        }
+
+        $config = $loaded['config'] ?? [];
+        foreach (is_array($config) ? $config : [] as $key => $files) {
+            if (!is_string($key) || !is_array($files)) {
+                continue;
+            }
+
+            foreach ($files as $name => $values) {
+                if (is_string($name) && is_array($values)) {
+                    $manifest['config'][$key][$name] = $values;
+                }
             }
         }
 

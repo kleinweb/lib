@@ -9,6 +9,7 @@ namespace Kleinweb\Lib\Tenancy;
 
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Foundation\Application;
 use Illuminate\Support\ServiceProvider;
 use Kleinweb\Lib\Console\Commands\Tenancy\AssignSiteKeys;
 use Kleinweb\Lib\Console\Commands\Tenancy\CacheSites;
@@ -52,6 +53,14 @@ final class TenancyServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        // Laravel's container applies `#[Bind]` attributes only once an
+        // environment resolver is set.  Laravel's LoadConfiguration sets it;
+        // Acorn's replacement does not, so default implementations declared
+        // with `#[Bind]` would otherwise be ignored.
+        if ($this->app instanceof Application) {
+            $this->app->resolveEnvironmentUsing($this->app->environment(...));
+        }
+
         $this->app->singleton(SiteRepository::class);
         $this->app->singleton(SiteManifest::class);
         $this->app->singleton(SiteContext::class, fn (): SiteContext => new SiteContext(

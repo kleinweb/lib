@@ -15,6 +15,7 @@ use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Application;
 use Kleinweb\Lib\Database\Models\Site;
 use Kleinweb\Lib\Tenancy\Discovery\SiteManifest;
+use Kleinweb\Lib\Tenancy\SitePlugin;
 use Kleinweb\Lib\Tenancy\SiteRepository;
 
 use function array_key_exists;
@@ -29,6 +30,7 @@ use function is_string;
 use function preg_match;
 use function reset;
 use function sprintf;
+use function str_starts_with;
 
 /**
  * Report multisite configuration problems; exits non-zero if any are found.
@@ -47,7 +49,7 @@ final class CheckSites extends Command
      *
      * @var string
      */
-    protected $description = 'Check site keys, site code, overlays, autoloading and requirements';
+    protected $description = 'Check site keys, site plugins, autoloading and requirements';
 
     /** @var list<array{string, string, string}> */
     private array $problems = [];
@@ -61,11 +63,12 @@ final class CheckSites extends Command
         $sites->refresh();
 
         $this->checkKeys($sites);
-        $this->checkOrphans($sites, $files, $app);
-        $this->checkProviders($sites, $manifest, $app);
+        $this->checkSitePlugins($sites, $files);
+        $this->checkProviders($sites, $manifest);
         $this->checkAutoload($sites, $manifest);
         $this->checkRequirements($sites, $manifest);
-        $this->checkRoutes($files, $app);
+        $this->checkPackages();
+        $this->checkRoutes($sites, $files, $app);
 
         if ($this->problems === []) {
             $this->components->info('No problems found.');
@@ -107,9 +110,10 @@ final class CheckSites extends Command
     }
 
     /**
-     * Site code and config overlays whose key matches no site.
+     * Site plugins: each matches a site, is active only where it belongs,
+     * and is active wherever it carries config.
      */
-    private function checkOrphans(SiteRepository $sites, Filesystem $files, Application $app): void
+    private function checkSitePlugins(SiteRepository $sites, Filesystem $files): void
     {
         $keys = $sites->all()
             ->map(static fn (Site $site): ?string => $site->key()?->value)
@@ -117,59 +121,57 @@ final class CheckSites extends Command
             ->values()
         ;
 
-        $studly = $sites->all()
-            ->map(static function (Site $site): ?string {
-                $key = $site->key();
+        $pluginRoot = \constant('WP_PLUGIN_DIR');
+        foreach (is_dir($pluginRoot) ? $files->directories($pluginRoot) : [] as $directory) {
+            $name = basename($directory);
+            if (!str_starts_with($name, SitePlugin::PREFIX)) {
+                continue;
+            }
 
-                return ($key !== null && $key->isNamespaceable()) ? $key->studly() : null;
-            })
-            ->filter()
-            ->values()
-            ->all()
-        ;
-
-        $sitesPath = $app->path('Sites');
-        foreach (is_dir($sitesPath) ? $files->directories($sitesPath) : [] as $directory) {
-            if (!in_array(basename($directory), $studly, true)) {
-                $this->problem('orphan', $directory, 'no site has a matching key');
+            $key = SitePlugin::keyFor($name);
+            if ($key === null || !$keys->contains($key->value)) {
+                $this->problem('plugin', $directory, 'no site has a matching key');
             }
         }
 
-        $configPath = $app->configPath('sites');
-        foreach (is_dir($configPath) ? $files->directories($configPath) : [] as $directory) {
-            if (!$keys->contains(basename($directory))) {
-                $this->problem('orphan', $directory, 'no site has a matching key');
+        foreach ($sites->all() as $site) {
+            $key = $site->key();
+            $active = $site->run(static fn (): array => SitePlugin::activeDirectories());
+
+            foreach ($active as $directory) {
+                $pluginKey = SitePlugin::keyFor($directory);
+                if ($pluginKey !== null && !$pluginKey->equals((string) $key)) {
+                    $this->problem('plugin', $directory, sprintf(
+                        'is active on site %d, which is not its site; it is ignored there',
+                        $site->id(),
+                    ));
+                }
+            }
+
+            if ($key === null) {
+                continue;
+            }
+
+            if ($site->run(static fn (): bool => SitePlugin::isNetworkActive($key))) {
+                $this->problem('plugin', SitePlugin::path($key), 'is network-activated; '
+                    . 'WordPress then loads its PHP on every site; activate it on its site only');
+            }
+
+            $isActive = in_array(SitePlugin::directory($key), $active, true);
+            if (!$isActive && is_dir(SitePlugin::configPath($key))) {
+                $this->problem('plugin', SitePlugin::path($key), sprintf(
+                    'has config but is not active on site %d, so none of it applies',
+                    $site->id(),
+                ));
             }
         }
     }
 
     /**
-     * Providers named in config or in theme and site-plugin manifests exist.
+     * Providers declared by themes and site plugins exist.
      */
-    private function checkProviders(
-        SiteRepository $sites,
-        SiteManifest $manifest,
-        Application $app,
-    ): void {
-        $config = $app->make('config');
-
-        foreach ($sites->all() as $site) {
-            $key = $site->key();
-            if ($key === null) {
-                continue;
-            }
-
-            $extra = $config->get("sites.{$key->value}.app.providers", []);
-            foreach (is_array($extra) ? $extra : [] as $provider) {
-                if (!is_string($provider) || !class_exists($provider)) {
-                    $this->problem('provider', "config/sites/{$key->value}/app.php", sprintf(
-                        'provider %s does not exist',
-                        is_string($provider) ? $provider : '(not a class name)',
-                    ));
-                }
-            }
-        }
-
+    private function checkProviders(SiteRepository $sites, SiteManifest $manifest): void
+    {
         foreach ($manifest->packageDirectories($sites) as $directory) {
             foreach ($manifest->providers($directory) as $provider) {
                 if (!class_exists($provider)) {
@@ -262,18 +264,38 @@ final class CheckSites extends Command
         }
     }
 
-    private function checkRoutes(Filesystem $files, Application $app): void
+    /**
+     * Packages this library replaces, which would register things twice.
+     */
+    private function checkPackages(): void
+    {
+        if (InstalledVersions::isInstalled('roots/acorn-post-types')) {
+            $this->problem(
+                'package',
+                'roots/acorn-post-types',
+                'kleinweb/lib registers post types per site; remove this package',
+            );
+        }
+    }
+
+    /**
+     * `route:cache` is network-wide, so site plugins' routes are not loaded.
+     */
+    private function checkRoutes(SiteRepository $sites, Filesystem $files, Application $app): void
     {
         if (!$app->routesAreCached()) {
             return;
         }
 
-        if ($files->glob($app->basePath('routes/sites/*.php')) !== []) {
-            $this->problem(
-                'routes',
-                'routes/sites/',
-                'routes are cached, so per-site routes are not loaded',
-            );
+        foreach ($sites->all() as $site) {
+            $key = $site->key();
+            if ($key !== null && $files->glob(SitePlugin::path($key) . '/routes/*.php') !== []) {
+                $this->problem(
+                    'routes',
+                    SitePlugin::path($key),
+                    'routes are cached, so this site plugin\'s routes are not loaded',
+                );
+            }
         }
     }
 

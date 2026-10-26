@@ -97,33 +97,56 @@ identified by a `Tenancy\SiteKey` stored as the `site_key` blogmeta
 `Tenancy\SiteRepository` looks sites up by key or ID.
 
 `Tenancy\TenancyServiceProvider` is registered through `extra.acorn.providers`
-and does nothing on single-site installs. On multisite, from an application
-`booting` callback (after all configured providers register, before any
-boot), it:
+and does nothing on single-site installs (beyond enabling Laravel's
+`#[Bind]` attribute, which Acorn's config loader leaves off).
 
-- registers the request site's providers via `Tenancy\SiteLoader`, least
-  specific first: `app/Sites/{Key}/Providers`, the active site plugin
-  `plugins/{key}/`, `providers` in `config/sites/{key}/app.php`, then the
-  parent theme's and child theme's `composer.json` providers. Later bindings
-  win. Also attaches `app/Sites/{Key}/View/Composers`, registers
-  `app/Sites/{Key}/Console/Commands`, prepends `resources/views/sites/{key}`,
-  and loads `routes/sites/{key}.php`.
-- applies the site's config overlay (`Tenancy\Bootstrappers\ConfigBootstrapper`
-  over `Tenancy\Config\ConfigOverlay`): `config/sites/{key}/*.php` loads as
-  `sites.{key}.*` and overlays the config file of the same name, leaf by leaf.
-  Bootstrappers are reverted and re-applied on every `switch_blog`
-  (`Tenancy\SiteContext`); providers are not.
+#### Where site code lives
+
+The application (`app/`, `config/`, the project mu-plugin that boots Acorn)
+holds only code shared by every site. Everything specific to one site lives
+in its theme or in its site plugin, `wp-content/plugins/kleinweb-site-{key}/`
+(`Tenancy\SitePlugin`):
+
+- providers, declared in the plugin's or theme's `composer.json`
+  (`extra.acorn.providers`); site plugin providers usually extend
+  `Tenancy\SiteServiceProvider`, which adds `views()`, `composers()` and
+  `webRoutes()` helpers;
+- config overlays, in the site plugin's `config/*.php`: `config/mail.php`
+  overlays `mail`, leaf by leaf (`Tenancy\Config\ConfigOverlay`: maps merge,
+  lists replace, `null` removes).
+
+WordPress loads plugins and themes as usual. From an application `booting`
+callback (after all configured providers register, before any boot),
+`Tenancy\SiteLoader` registers, least specific first so later bindings win:
+the site plugin's providers (only if it is active on this site and named for
+this site's key), then the active parent theme's, then the child theme's.
+`Tenancy\Bootstrappers\ConfigBootstrapper` applies the site plugin's config
+while it is active. One site therefore never loads another site's services or
+config, even if a site plugin is activated on the wrong site.
+
+`examples/multisite/` is a complete example project.
+
+#### Post types and taxonomies
+
+`ContentTypes\ContentTypesServiceProvider` replaces `roots/acorn-post-types`
+with the same `config/post-types.php` format (Extended CPTs arguments). Site
+plugins add, change or remove (`null`) types in their own
+`config/post-types.php`. `ContentTypes\ContentTypeRegistrar::runFor()`, used
+by `forEachSite()`, temporarily switches registrations to the visited site's
+types (taxonomy links included) so its content can be written from the
+console.
 
 #### Class loading
 
-All site, theme and site-plugin classes are autoloaded by Composer on every
-site: `app/Sites/*` through the project's `App\` mapping, themes and site
-plugins through `wikimedia/composer-merge-plugin` including their
-`composer.json`. The library adds no autoloaders. Loading a class has no side
-effects; site-specific behaviour comes only from which providers
-`SiteLoader` registers. Theme and site-plugin `composer.json` files must not
-use `autoload.files`, which would run on every site; `site:check` reports
-it, along with PSR-4 prefixes Composer does not know.
+All theme and site-plugin classes are autoloaded by Composer on every site,
+through `wikimedia/composer-merge-plugin` in the project's `composer.json`
+including `wp-content/themes/*/composer.json` and
+`wp-content/plugins/kleinweb-site-*/composer.json`. The library adds no
+autoloaders. Loading a class has no side effects; site-specific behaviour
+comes only from which providers are registered. Theme and site-plugin
+`composer.json` files must not use `autoload.files`, which would run on every
+site; `site:check` reports it, along with PSR-4 prefixes Composer does not
+know.
 
 #### `switch_to_blog()` contract
 
@@ -133,8 +156,8 @@ Multisite support mirrors Core: code is per process, data follows the switch.
 | --- | --- |
 | WordPress tables, options, object cache (Core) | Providers and container bindings |
 | Laravel cache, per blog (`Tenancy\Bootstrappers\CacheBootstrapper`) | Routes, view paths, view composers, commands |
-| Config overlay for keyed sites (`ConfigBootstrapper`) | Objects that copied config when built (e.g. acorn-mail) |
-| `cache.prefix` / `session.cookie` (Acorn) | Post types and taxonomies (Core never re-registers them) |
+| Site plugin config overlay (`ConfigBootstrapper`) | Objects that copied config when built (e.g. acorn-mail) |
+| `cache.prefix` / `session.cookie` (Acorn) | Post types and taxonomies, except inside `ContentTypeRegistrar::runFor()` |
 
 - `Tenancy\SiteContext::sync()` runs on `switch_blog` at priority 20, after
   Acorn's handler. Nothing it runs may throw: Core has already switched its

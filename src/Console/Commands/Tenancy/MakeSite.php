@@ -9,16 +9,25 @@ namespace Kleinweb\Lib\Console\Commands\Tenancy;
 
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
-use Kleinweb\Lib\Tenancy\Discovery\SiteManifest;
 use Kleinweb\Lib\Tenancy\Exceptions\InvalidSiteKey;
 use Kleinweb\Lib\Tenancy\SiteKey;
+use Kleinweb\Lib\Tenancy\SitePlugin;
 use Kleinweb\Lib\Tenancy\SiteRepository;
 
-use function config_path;
 use function is_string;
+use function json_encode;
 use function rtrim;
 use function sprintf;
+use function str_replace;
+use function ucwords;
 
+use const JSON_PRETTY_PRINT;
+use const JSON_THROW_ON_ERROR;
+use const JSON_UNESCAPED_SLASHES;
+
+/**
+ * Create a site plugin: `wp-content/plugins/kleinweb-site-{key}/`.
+ */
 final class MakeSite extends Command
 {
     /**
@@ -35,9 +44,9 @@ final class MakeSite extends Command
      *
      * @var string
      */
-    protected $description = 'Create the code and config skeleton for a site';
+    protected $description = 'Create a site plugin with a provider and a config directory';
 
-    public function handle(Filesystem $files, SiteManifest $manifest, SiteRepository $sites): int
+    public function handle(Filesystem $files, SiteRepository $sites): int
     {
         $value = $this->argument('key');
 
@@ -50,13 +59,19 @@ final class MakeSite extends Command
             return self::FAILURE;
         }
 
-        $namespace = rtrim($manifest->siteNamespace($key), '\\');
+        $namespace = rtrim(SitePlugin::namespace($key), '\\');
         $provider = "{$studly}ServiceProvider";
+        $plugin = SitePlugin::path($key);
 
-        $providerPath = $manifest->sitePath($key) . "/Providers/{$provider}.php";
         $targets = [
-            $providerPath => $this->providerStub($namespace, $provider, $key),
-            config_path("sites/{$key->value}/app.php") => $this->configStub(),
+            "{$plugin}/" . SitePlugin::directory($key) . '.php' => $this->pluginStub($key),
+            "{$plugin}/composer.json" => $this->composerStub($key, $namespace, $provider),
+            "{$plugin}/src/Providers/{$provider}.php" => $this->providerStub(
+                $namespace,
+                $provider,
+                $key,
+            ),
+            "{$plugin}/config/.gitkeep" => '',
         ];
 
         foreach ($targets as $path => $contents) {
@@ -71,6 +86,15 @@ final class MakeSite extends Command
             $this->components->info("Created [{$path}].");
         }
 
+        $this->components->bulletList([
+            'Run `composer update` so wikimedia/composer-merge-plugin picks up the '
+            . 'plugin\'s composer.json (include wp-content/plugins/kleinweb-site-*/composer.json).',
+            sprintf(
+                'Activate it on its site only: `wp --url=<site url> plugin activate %s`.',
+                SitePlugin::directory($key),
+            ),
+        ]);
+
         if ($sites->find($key) === null) {
             $this->components->warn(sprintf(
                 'No site has the key "%s" yet; set it with '
@@ -83,6 +107,50 @@ final class MakeSite extends Command
         return self::SUCCESS;
     }
 
+    private function pluginStub(SiteKey $key): string
+    {
+        $title = ucwords(str_replace('-', ' ', $key->value));
+
+        return <<<PHP
+            <?php
+
+            /**
+             * Plugin Name: {$title} site
+             * Description: Code and configuration specific to the "{$key->value}" site.
+             * Network: false
+             */
+
+            declare(strict_types=1);
+
+            // Providers are declared in composer.json; config overlays live in config/.
+            // Nothing else belongs here: this file loads only where the plugin is active.
+
+            PHP;
+    }
+
+    private function composerStub(SiteKey $key, string $namespace, string $provider): string
+    {
+        $composer = [
+            'name' => 'kleinweb/' . SitePlugin::directory($key),
+            'description' => "Code and configuration specific to the \"{$key->value}\" site.",
+            'type' => 'wordpress-plugin',
+            'license' => 'GPL-3.0-or-later',
+            'autoload' => [
+                'psr-4' => ["{$namespace}\\" => 'src/'],
+            ],
+            'extra' => [
+                'acorn' => [
+                    'providers' => ["{$namespace}\\Providers\\{$provider}"],
+                ],
+            ],
+        ];
+
+        return json_encode(
+            $composer,
+            JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR,
+        ) . "\n";
+    }
+
     private function providerStub(string $namespace, string $class, SiteKey $key): string
     {
         return <<<PHP
@@ -92,12 +160,12 @@ final class MakeSite extends Command
 
             namespace {$namespace}\\Providers;
 
-            use Illuminate\\Support\\ServiceProvider;
+            use Kleinweb\\Lib\\Tenancy\\SiteServiceProvider;
 
             /**
-             * Registered only on the "{$key->value}" site.
+             * Registered only on requests for the "{$key->value}" site.
              */
-            final class {$class} extends ServiceProvider
+            final class {$class} extends SiteServiceProvider
             {
                 /**
                  * Bindings that replace shared ones on this site.
@@ -106,35 +174,14 @@ final class MakeSite extends Command
                  */
                 public array \$bindings = [];
 
-                public function register(): void
-                {
-                    //
-                }
-
                 public function boot(): void
                 {
-                    //
+                    parent::boot();
+
+                    // \$this->views(__DIR__ . '/../../resources/views');
+                    // \$this->webRoutes(__DIR__ . '/../../routes/web.php');
                 }
             }
-
-            PHP;
-    }
-
-    private function configStub(): string
-    {
-        return <<<'PHP'
-            <?php
-
-            declare(strict_types=1);
-
-            /*
-             * Site overlay for config/app.php.  Other files in this directory
-             * overlay the config file of the same name, e.g. mail.php.
-             */
-            return [
-                // Extra providers registered only on this site.
-                'providers' => [],
-            ];
 
             PHP;
     }

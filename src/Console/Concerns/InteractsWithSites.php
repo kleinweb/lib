@@ -11,6 +11,7 @@ use Closure;
 use Illuminate\Console\Command;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Support\Collection;
+use Kleinweb\Lib\ContentTypes\ContentTypeRegistrar;
 use Kleinweb\Lib\Database\Models\Site;
 use Kleinweb\Lib\Tenancy\SiteRepository;
 use Throwable;
@@ -48,19 +49,27 @@ trait InteractsWithSites
      * counts as a failure for that site; the error is reported, the previous
      * site restored, and the loop carries on.
      *
+     * With `$contentTypes`, each site's post types and taxonomies are
+     * registered while its callback runs (see
+     * {@see ContentTypeRegistrar::runFor()}), so creating posts or assigning
+     * terms of a type only that site has works.
+     *
      * @param Closure(Site): mixed $callback
      *
      * @return int `Command::SUCCESS` if every site succeeded, else `FAILURE`
      */
-    protected function forEachSite(Closure $callback): int
+    protected function forEachSite(Closure $callback, bool $contentTypes = true): int
     {
+        $registrar = $contentTypes ? $this->laravel->make(ContentTypeRegistrar::class) : null;
         $failed = [];
 
         foreach ($this->selectedSites() as $site) {
             $label = $this->siteLabel($site);
 
             try {
-                $result = $site->run($callback);
+                $result = ($registrar !== null)
+                    ? $registrar->runFor($site, $callback)
+                    : $site->run($callback);
                 if ($result === false || (is_int($result) && $result !== 0)) {
                     $failed[] = $label;
                 }
