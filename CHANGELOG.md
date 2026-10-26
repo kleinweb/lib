@@ -2,6 +2,16 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## [4.0.0](https://github.com/kleinweb/lib/compare/1f7da00c03f20e08b5a955fe42ee3bacf282dbff..4.0.0) - 2026-10-26
+#### Features
+- ![BREAKING](https://img.shields.io/badge/BREAKING-red) (**plugin**) determine version number automatically - ([1f7da00](https://github.com/kleinweb/lib/commit/1f7da00c03f20e08b5a955fe42ee3bacf282dbff)) - chris montgomery
+#### Bug Fixes
+- (**multisite|console|dev**) remove unused binding of process result - ([65acb55](https://github.com/kleinweb/lib/commit/65acb5520d38f4c0f7e02bacaf1df761265fc6a7)) - chris montgomery
+#### Miscellaneous Chores
+- update from project template - ([aeb7893](https://github.com/kleinweb/lib/commit/aeb78939effd9bae9a9dc4ddbbb98b4981a71fe2)) - chris montgomery
+
+- - -
+
 ## [3.2.0](https://github.com/kleinweb/lib/compare/4d03e777bd0381978d23be0eff42d534dc838bd3..3.2.0) - 2026-09-21
 #### Features
 - (**media|privacy**) allowlist media url pattern in consent manager - ([4d03e77](https://github.com/kleinweb/lib/commit/4d03e777bd0381978d23be0eff42d534dc838bd3)) - chris montgomery
