@@ -1,7 +1,15 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.13/schema.json",
   "files": {
-    "includes": ["**", "!**/composer.lock", "!**/*.min.*", "!**/CHANGELOG.md"]
+    "includes": [
+      "**",
+      "!.changeset/",
+      "!**/composer.lock",
+      "!**/dist/",
+      "!**/*.min.*",
+      "!**/public/build/",
+      "!**/CHANGELOG.md"
+    ]
   },
   "formatter": {
     "enabled": true,

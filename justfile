@@ -25,3 +25,8 @@ default:
 build:
    fd -t f '^vite\.config\.' -a -x \
      bash -c 'cd {//} && pnpm exec vite build'
+
+init: secrets::init 
+    cp --update=none .env.example .env
+    composer install
+    pnpm install

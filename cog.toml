@@ -21,6 +21,6 @@ owner = "kleinweb"
 repository = "lib"
 path = "CHANGELOG.md"
 authors = [
-  { signature = "Chris Montgomery", username = "astratagem" },
+  { signature = "Chris Montgomery", username = "montchr" },
   { signature = "Bella Pezzati", username = "bpizzle" },
 ]

@@ -38,6 +38,7 @@
         pkgs.php
         pkgs.php.packages.composer
         pkgs.pnpm
+        pkgs.trurl
         pkgs.xq-xml
         pkgs.wp-cli
       ];

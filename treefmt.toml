@@ -4,6 +4,7 @@
 
 [global]
 excludes = [
+  "**/dist/**",
   "**/node_modules/**",
   "**/vendor/**",
   "**/*.min.*",
@@ -75,7 +76,7 @@ excludes = []
 command = "prettier"
 options = ["--write"]
 includes = ["*.md", "*.mdx", "*.scss", "*.yaml", "*.yml"]
-excludes = ["CHANGELOG.md", ".ddev/**"]
+excludes = ["CHANGELOG.md", ".changeset/**", ".ddev/**"]
 
 [formatter.taplo]
 command = "taplo"
