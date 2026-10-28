@@ -28,7 +28,6 @@ use function is_array;
 use function is_dir;
 use function is_string;
 use function preg_match;
-use function reset;
 use function sprintf;
 use function str_starts_with;
 
@@ -181,9 +180,12 @@ final class CheckSites extends Command
      */
     private function checkAutoload(SiteRepository $sites, SiteManifest $manifest): void
     {
-        $loaders = ClassLoader::getRegisteredLoaders();
-        $loader = reset($loaders);
-        $known = ($loader instanceof ClassLoader) ? $loader->getPrefixesPsr4() : [];
+        // Every registered loader: plugins with their own vendor/ register
+        // theirs too, and the project's need not be first.
+        $known = [];
+        foreach (ClassLoader::getRegisteredLoaders() as $loader) {
+            $known += $loader->getPrefixesPsr4();
+        }
 
         foreach ($manifest->packageDirectories($sites) as $directory) {
             $composer = $manifest->composerJson($directory);
