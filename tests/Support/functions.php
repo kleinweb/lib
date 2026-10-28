@@ -171,6 +171,17 @@ function get_site_meta(int $id, string $key = '', bool $single = false): mixed
     return WordPress::$meta[$id][$key] ?? '';
 }
 
+function add_site_meta(int $id, string $key, mixed $value, bool $unique = false): int|false
+{
+    if ($unique && isset(WordPress::$meta[$id][$key])) {
+        return false;
+    }
+
+    WordPress::$meta[$id][$key] = $value;
+
+    return 1;
+}
+
 function update_site_meta(int $id, string $key, mixed $value): bool
 {
     WordPress::$meta[$id][$key] = $value;
@@ -183,6 +194,21 @@ function get_home_url(?int $id = null, string $path = ''): string
     $site = WordPress::$sites[$id ?? WordPress::$blogId];
 
     return "https://{$site['domain']}{$site['path']}" . ltrim($path, '/');
+}
+
+function home_url(string $path = ''): string
+{
+    return get_home_url(null, $path);
+}
+
+function get_post_type_archive_link(string $type): string|false
+{
+    return post_type_exists($type) ? home_url("/{$type}/") : false;
+}
+
+function wp_date(string $format, ?int $timestamp = null): string
+{
+    return date($format, $timestamp ?? 0);
 }
 
 function get_bloginfo(string $show = ''): string
@@ -244,6 +270,19 @@ function get_stylesheet_directory(): string
 function get_theme_root(): string
 {
     return \constant('WP_CONTENT_DIR') . '/themes';
+}
+
+function add_theme_support(string $feature, mixed ...$args): void
+{
+    WordPress::$themeSupports[$feature] = true;
+}
+
+/**
+ * @param array<string, string> $locations
+ */
+function register_nav_menus(array $locations = []): void
+{
+    // Not modelled.
 }
 
 // Misc.

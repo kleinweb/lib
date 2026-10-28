@@ -40,6 +40,9 @@ final class WordPress
     /** @var array<string, int> */
     public static array $actionCounts = [];
 
+    /** @var array<string, true> */
+    public static array $themeSupports = [];
+
     public static string $template = '';
 
     public static string $stylesheet = '';
@@ -66,6 +69,7 @@ final class WordPress
             'page' => ['builtin' => true, 'args' => []],
         ];
         self::$taxonomies = [];
+        self::$themeSupports = [];
         self::$template = \constant('WP_CONTENT_DIR') . '/themes/kleinweb-base';
         self::$stylesheet = self::$template;
     }
@@ -75,9 +79,15 @@ final class WordPress
      *
      * @param list<string> $activePlugins
      */
-    public static function addSite(int $id, ?string $key = null, array $activePlugins = []): void
-    {
-        self::$sites[$id] = ['domain' => "site{$id}.test", 'path' => '/', 'network' => 1];
+    public static function addSite(
+        int $id,
+        ?string $key = null,
+        array $activePlugins = [],
+        ?string $domain = null,
+        string $path = '/',
+    ): void {
+        $domain ??= "site{$id}.test";
+        self::$sites[$id] = ['domain' => $domain, 'path' => $path, 'network' => 1];
         self::$meta[$id] = ($key !== null) ? ['site_key' => $key] : [];
         self::$options[$id] = ['active_plugins' => $activePlugins];
     }

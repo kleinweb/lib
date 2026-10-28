@@ -64,6 +64,7 @@ final class SiteContextTest extends TestCase
         $this->config = new Config([
             'mail' => ['default' => 'log', 'from' => ['address' => 'shared@x', 'name' => 'Shared']],
             'post-types' => self::exampleConfig('post-types'),
+            'tenancy' => ['meta_config' => ['contact_email' => 'mail.from.address']],
         ]);
 
         $events = new Dispatcher();
@@ -137,6 +138,23 @@ final class SiteContextTest extends TestCase
         switch_to_blog(5);
         self::assertSame(self::TICKETING, $this->config->get('services.ticketing.endpoint'));
         restore_current_blog();
+    }
+
+    public function testBlogmetaValuesMappedInTenancyConfigApplyOnTop(): void
+    {
+        WordPress::$meta[5]['contact_email'] = 'tickets@klein.temple.edu';
+        WordPress::$meta[2]['contact_email'] = '';
+
+        switch_to_blog(5);
+        self::assertSame('tickets@klein.temple.edu', $this->config->get('mail.from.address'));
+        restore_current_blog();
+
+        switch_to_blog(2);
+        // Empty meta is ignored.
+        self::assertSame('news@klein.temple.edu', $this->config->get('mail.from.address'));
+        restore_current_blog();
+
+        self::assertSame('shared@x', $this->config->get('mail.from.address'));
     }
 
     public function testNestedSwitchesUnwindInOrder(): void
