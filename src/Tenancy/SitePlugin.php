@@ -9,14 +9,14 @@ namespace Kleinweb\Lib\Tenancy;
 
 use function array_keys;
 use function constant;
+use function get_site_meta;
 use function get_option;
 use function get_site_option;
-use function in_array;
 use function is_array;
+use function is_file;
 use function is_string;
 use function str_starts_with;
 use function strlen;
-use function strpos;
 use function substr;
 
 /**
@@ -27,11 +27,11 @@ use function substr;
  * overlays (`config/*.php`).  The application itself holds no site-specific
  * code.
  *
- * WordPress loads the plugin as usual; the application registers its
- * providers and applies its config only on a request for that site, and only
- * while the plugin is activated there.  A site plugin activated on another
- * site is ignored, so one site can never load another's services.  Network
- * activation is refused ({@see SitePluginGuard}) and never counts.
+ * A site plugin is never activated.  It applies to the site whose key it is
+ * named for whenever it exists: the application registers its providers and
+ * applies its config on that site only, and {@see SitePluginLoader} makes
+ * WordPress load its plugin file there and nowhere else.  Activation, per
+ * site or network-wide, is refused ({@see SitePluginGuard}).
  */
 final class SitePlugin
 {
@@ -42,14 +42,35 @@ final class SitePlugin
         return self::PREFIX . $key->value;
     }
 
+    /**
+     * The plugin basename WordPress uses, `kleinweb-site-{key}/kleinweb-site-{key}.php`.
+     */
+    public static function basename(SiteKey $key): string
+    {
+        return self::directory($key) . '/' . self::directory($key) . '.php';
+    }
+
     public static function path(SiteKey $key): string
     {
         return constant('WP_PLUGIN_DIR') . '/' . self::directory($key);
     }
 
+    public static function file(SiteKey $key): string
+    {
+        return constant('WP_PLUGIN_DIR') . '/' . self::basename($key);
+    }
+
     public static function configPath(SiteKey $key): string
     {
         return self::path($key) . '/config';
+    }
+
+    /**
+     * Whether the site has a site plugin, which then applies to it.
+     */
+    public static function exists(SiteKey $key): bool
+    {
+        return is_file(self::file($key));
     }
 
     /**
@@ -79,30 +100,28 @@ final class SitePlugin
     }
 
     /**
-     * Whether the site's plugin is active on the current blog.
+     * The key of a blog, read straight from blogmeta.
      *
-     * Only per-site activation counts.  A site plugin must never be
-     * network-activated (the application itself is the network-wide code);
-     * if one is, it applies nowhere, and `site:check` reports it.
-     *
-     * Reads the current blog's options, so it follows `switch_to_blog()`.
+     * Usable before Acorn boots (from an mu-plugin), unlike
+     * {@see SiteRepository}.
      */
-    public static function isActive(SiteKey $key): bool
+    public static function keyForBlog(int $blogId): ?SiteKey
     {
-        return in_array(self::directory($key), self::activeDirectories(), true);
+        $value = get_site_meta($blogId, SiteMeta::Key->value, true);
+
+        return is_string($value) ? SiteKey::tryFrom($value) : null;
     }
 
     /**
-     * Directories of the plugins activated on the current blog itself, not
-     * network-wide.
+     * Site plugins in the current blog's active plugin list, by basename.
      *
      * @return list<string>
      */
-    public static function activeDirectories(): array
+    public static function listedActive(): array
     {
         $active = get_option('active_plugins', []);
 
-        return self::directories(is_array($active) ? $active : []);
+        return self::sitePlugins(is_array($active) ? $active : []);
     }
 
     /**
@@ -114,14 +133,7 @@ final class SitePlugin
     {
         $network = get_site_option('active_sitewide_plugins', []);
 
-        $plugins = [];
-        foreach (is_array($network) ? array_keys($network) : [] as $plugin) {
-            if (is_string($plugin) && self::isSitePlugin($plugin)) {
-                $plugins[] = $plugin;
-            }
-        }
-
-        return $plugins;
+        return self::sitePlugins(is_array($network) ? array_keys($network) : []);
     }
 
     /**
@@ -129,21 +141,15 @@ final class SitePlugin
      *
      * @return list<string>
      */
-    private static function directories(array $plugins): array
+    private static function sitePlugins(array $plugins): array
     {
-        $directories = [];
-
+        $sitePlugins = [];
         foreach ($plugins as $plugin) {
-            if (!is_string($plugin)) {
-                continue;
-            }
-
-            $slash = strpos($plugin, '/');
-            if ($slash !== false) {
-                $directories[] = substr($plugin, 0, $slash);
+            if (is_string($plugin) && self::isSitePlugin($plugin)) {
+                $sitePlugins[] = $plugin;
             }
         }
 
-        return $directories;
+        return $sitePlugins;
     }
 }

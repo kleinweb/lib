@@ -8,37 +8,39 @@ declare(strict_types=1);
 namespace Kleinweb\Lib\Tenancy;
 
 use Closure;
-use Kleinweb\Lib\Tenancy\Exceptions\SitePluginNetworkActivated;
+use Kleinweb\Lib\Tenancy\Exceptions\SitePluginActivation;
 use Throwable;
 
 use function add_action;
 use function add_filter;
 use function array_keys;
 use function esc_html;
+use function in_array;
 use function is_array;
 use function is_string;
 use function wp_die;
 
 /**
- * Refuses network activation of site plugins.
+ * Refuses activation and deactivation of site plugins.
  *
- * A site plugin holds one site's code; the network-wide code is the
- * application itself (the mu-plugin that boots Acorn).  A network-activated
- * site plugin would never apply anyway ({@see SitePlugin::isActive()}), so
- * activation is stopped rather than left to look as if it worked:
+ * Site plugins load automatically on their own site
+ * ({@see SitePluginLoader}); activating one would at best do nothing and at
+ * worst load it where it does not belong, so:
  *
- * - `activate_plugin`: an interactive network activation, from the network
- *   admin or `wp plugin activate --network`, ends in `wp_die()` before
- *   WordPress records it.
- * - `pre_update_site_option_active_sitewide_plugins`: any other write that
- *   adds a site plugin (silent activation, direct option updates) has it
- *   removed, and the attempt is reported.
+ * - `map_meta_cap`: nobody has `activate_plugin` or `deactivate_plugin` for
+ *   a site plugin, so the plugins screens offer neither.
+ * - `activate_plugin`: an activation that does not check capabilities
+ *   (WP-CLI, code) ends in `wp_die()` before WordPress records it.
+ * - `pre_update_site_option_active_sitewide_plugins`: a site plugin added to
+ *   the network-active list any other way is removed, and reported.
+ *   ({@see SitePluginLoader} keeps them out of per-site lists.)
  *
- * Site plugins already network-activated are left alone here and reported
- * by `site:check`.
+ * Activations already stored are reported by `site:check`.
  */
 final class SitePluginGuard
 {
+    private const array CAPABILITIES = ['activate_plugin', 'deactivate_plugin'];
+
     /**
      * @param Closure(Throwable): void $report
      */
@@ -46,6 +48,7 @@ final class SitePluginGuard
 
     public function register(): void
     {
+        add_filter('map_meta_cap', $this->denyCapabilities(...), 10, 4);
         add_action('activate_plugin', $this->refuseActivation(...), 0, 2);
         add_filter(
             'pre_update_site_option_active_sitewide_plugins',
@@ -55,14 +58,36 @@ final class SitePluginGuard
         );
     }
 
+    /**
+     * @param array<array-key, mixed> $caps
+     * @param array<array-key, mixed> $args
+     *
+     * @return array<array-key, mixed>
+     */
+    public function denyCapabilities(
+        array $caps,
+        mixed $cap,
+        // phpcs:ignore SlevomatCodingStandard.Functions.UnusedParameter -- Precedes $args in the filter.
+        mixed $userId = 0,
+        array $args = [],
+    ): array {
+        $plugin = $args[0] ?? null;
+
+        return in_array($cap, self::CAPABILITIES, true)
+            && is_string($plugin)
+            && SitePlugin::isSitePlugin($plugin)
+            ? ['do_not_allow']
+            : $caps;
+    }
+
     public function refuseActivation(mixed $plugin, mixed $networkWide = false): void
     {
-        if (!$networkWide || !is_string($plugin) || !SitePlugin::isSitePlugin($plugin)) {
+        if (!is_string($plugin) || !SitePlugin::isSitePlugin($plugin)) {
             return;
         }
 
         wp_die(
-            esc_html((new SitePluginNetworkActivated($plugin))->getMessage()),
+            esc_html((new SitePluginActivation($plugin, (bool) $networkWide))->getMessage()),
             'Site plugin not activated',
             ['response' => 403, 'back_link' => true],
         );
@@ -84,7 +109,7 @@ final class SitePluginGuard
             }
 
             unset($value[$plugin]);
-            ($this->report)(new SitePluginNetworkActivated($plugin));
+            ($this->report)(new SitePluginActivation($plugin, true));
         }
 
         return $value;

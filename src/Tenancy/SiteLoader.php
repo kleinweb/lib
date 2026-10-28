@@ -26,10 +26,10 @@ use function is_subclass_of;
  *
  * The application holds no site-specific code.  Site code lives in the
  * site's plugin (`kleinweb-site-{key}`) or in its theme, and declares its
- * providers in its `composer.json` (`extra.acorn.providers`).  Only code
- * WordPress has activated for this site is used:
+ * providers in its `composer.json` (`extra.acorn.providers`).  Only this
+ * site's code is used:
  *
- * 1. the site plugin, if active on this site and named for this site's key;
+ * 1. the site plugin named for this site's key, if it exists;
  * 2. the active parent theme;
  * 3. the active child theme.
  *
@@ -49,7 +49,7 @@ final class SiteLoader
         $providers = [];
 
         $key = $site->key();
-        if ($key !== null && SitePlugin::isActive($key)) {
+        if ($key !== null && SitePlugin::exists($key)) {
             $providers = $this->manifest->providers(SitePlugin::path($key));
         }
 

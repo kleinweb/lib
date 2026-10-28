@@ -55,8 +55,7 @@ final class ConfigBootstrapper implements SiteBootstrapper
             return;
         }
 
-        // Runs after the switch, so this reads the target site's plugins.
-        $files = SitePlugin::isActive($key) ? $this->manifest->config($key) : [];
+        $files = SitePlugin::exists($key) ? $this->manifest->config($key) : [];
         $leaves = ConfigOverlay::leaves($files);
 
         foreach (self::IGNORED as $ignored) {

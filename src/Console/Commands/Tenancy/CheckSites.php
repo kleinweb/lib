@@ -16,6 +16,7 @@ use Illuminate\Foundation\Application;
 use Kleinweb\Lib\Database\Models\Site;
 use Kleinweb\Lib\Tenancy\Discovery\SiteManifest;
 use Kleinweb\Lib\Tenancy\SitePlugin;
+use Kleinweb\Lib\Tenancy\SitePluginLoader;
 use Kleinweb\Lib\Tenancy\SiteRepository;
 
 use function array_key_exists;
@@ -23,7 +24,6 @@ use function array_keys;
 use function basename;
 use function class_exists;
 use function count;
-use function in_array;
 use function is_array;
 use function is_dir;
 use function is_string;
@@ -109,11 +109,21 @@ final class CheckSites extends Command
     }
 
     /**
-     * Site plugins: none is network-activated, each matches a site, is active
-     * only where it belongs, and is active wherever it carries config.
+     * Site plugins: loaded automatically, never activated, and each named
+     * for a site.
      */
     private function checkSitePlugins(SiteRepository $sites, Filesystem $files): void
     {
+        if (!SitePluginLoader::isRegistered()) {
+            $this->problem('plugin', 'mu-plugins', 'SitePluginLoader::register() is not called '
+                . 'from an mu-plugin, so site plugins\' own plugin files are not loaded');
+        }
+
+        foreach (SitePlugin::networkActivated() as $plugin) {
+            $this->problem('plugin', $plugin, 'is network-activated; site plugins load '
+                . 'automatically on their own site; network-deactivate it');
+        }
+
         $keys = $sites->all()
             ->map(static fn (Site $site): ?string => $site->key()?->value)
             ->filter()
@@ -133,33 +143,15 @@ final class CheckSites extends Command
             }
         }
 
-        foreach (SitePlugin::networkActivated() as $plugin) {
-            $this->problem('plugin', $plugin, 'is network-activated, which is not allowed '
-                . 'and applies it nowhere; network-deactivate it and activate it on its site');
-        }
-
         foreach ($sites->all() as $site) {
-            $key = $site->key();
-            $active = $site->run(static fn (): array => SitePlugin::activeDirectories());
+            $listed = $site->run(static fn (): array => SitePluginLoader::withoutOwnPlugin(
+                SitePlugin::listedActive(...),
+            ));
 
-            foreach ($active as $directory) {
-                $pluginKey = SitePlugin::keyFor($directory);
-                if ($pluginKey !== null && !$pluginKey->equals((string) $key)) {
-                    $this->problem('plugin', $directory, sprintf(
-                        'is active on site %d, which is not its site; it is ignored there',
-                        $site->id(),
-                    ));
-                }
-            }
-
-            if ($key === null) {
-                continue;
-            }
-
-            $isActive = in_array(SitePlugin::directory($key), $active, true);
-            if (!$isActive && is_dir(SitePlugin::configPath($key))) {
-                $this->problem('plugin', SitePlugin::path($key), sprintf(
-                    'has config but is not active on site %d, so none of it applies',
+            foreach ($listed as $plugin) {
+                $this->problem('plugin', $plugin, sprintf(
+                    'is activated, or loaded by other code, on site %d; site plugins load '
+                    . 'automatically on their own site; deactivate it there',
                     $site->id(),
                 ));
             }

@@ -117,19 +117,25 @@ site plugin, `wp-content/plugins/kleinweb-site-{key}/` (`Tenancy\SitePlugin`):
   overlays `mail`, leaf by leaf (`Tenancy\Config\ConfigOverlay`: maps merge,
   lists replace, `null` removes).
 
+A site plugin is never activated: it applies to the site whose key it is
+named for whenever it exists. `Tenancy\SitePluginLoader::register()`, called
+from a project mu-plugin before plugins load, adds each blog's own site plugin
+to that blog's `active_plugins` as read (never as stored), so WordPress loads
+it there and nowhere else, following `switch_to_blog()`.
+`Tenancy\SitePluginGuard` refuses activation and deactivation (no
+`activate_plugin`/`deactivate_plugin` capability, `wp_die()` on
+`activate_plugin`, silent network additions removed and reported);
+`site:check` fails on stored activations and on a missing loader. Never list
+a site plugin in `alleyinteractive/wp-plugin-loader`, which makes plugins
+active on every site.
+
 WordPress loads plugins and themes as usual. From an application `booting`
 callback (after all configured providers register, before any boot),
 `Tenancy\SiteLoader` registers, least specific first so later bindings win:
-the site plugin's providers (only if it is activated on this site and named
-for this site's key), then the active parent theme's, then the child theme's.
-`Tenancy\Bootstrappers\ConfigBootstrapper` applies the site plugin's config
-while it is active. One site therefore never loads another site's services or
-config, even if a site plugin is activated on the wrong site.
-
-A site plugin must never be network-activated. `Tenancy\SitePluginGuard`
-refuses it (`wp_die()` on `activate_plugin`; a silent addition to
-`active_sitewide_plugins` is removed and reported), network activation never
-counts as active, and `site:check` fails on one already network-active.
+the site plugin's providers (the one named for this site's key), then the
+active parent theme's, then the child theme's.
+`Tenancy\Bootstrappers\ConfigBootstrapper` applies that site plugin's config.
+Both go by key, so one site never loads another site's services or config.
 
 `examples/multisite/` is a complete example project.
 

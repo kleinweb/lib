@@ -90,8 +90,9 @@ final class MakeSite extends Command
             'Run `composer update` so wikimedia/composer-merge-plugin picks up the '
             . 'plugin\'s composer.json (include wp-content/plugins/kleinweb-site-*/composer.json).',
             sprintf(
-                'Activate it on its site only: `wp --url=<site url> plugin activate %s`.',
-                SitePlugin::directory($key),
+                'Nothing to activate: it loads automatically on the site with the key "%s" '
+                . '(SitePluginLoader::register() in an mu-plugin).',
+                $key->value,
             ),
         ]);
 
@@ -117,13 +118,12 @@ final class MakeSite extends Command
             /**
              * Plugin Name: {$title} site
              * Description: Code and configuration specific to the "{$key->value}" site.
-             * Network: false
              */
 
             declare(strict_types=1);
 
+            // Loaded automatically on the "{$key->value}" site only; never activate it.
             // Providers are declared in composer.json; config overlays live in config/.
-            // Nothing else belongs here: this file loads only where the plugin is active.
 
             PHP;
     }
