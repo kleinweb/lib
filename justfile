@@ -17,6 +17,7 @@ alias check := qa::check
 alias lint := qa::lint
 alias fix := qa::fix
 alias fmt := qa::fmt
+alias test := qa::test
 
 default:
   @just --choose

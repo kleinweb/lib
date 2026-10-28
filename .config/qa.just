@@ -7,6 +7,10 @@ check:
     biome check {{ prj-root }}
     composer check
 
+[doc("Run the test suite")]
+test *args:
+    composer phpunit -- {{ args }}
+
 [doc("Check for non-stylistic linting issues on project files")]
 lint:
     biome lint {{ prj-root }}

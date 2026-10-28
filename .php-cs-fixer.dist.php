@@ -32,6 +32,7 @@ return $config
         PhpCsFixer\Finder::create()
             ->in([
                 'src',
+                'tests',
             ])
             ->ignoreDotFiles(false)
             ->exclude([

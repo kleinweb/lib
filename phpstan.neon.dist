@@ -11,6 +11,10 @@ parameters:
     inferPrivatePropertyTypeFromConstructor: true
     paths:
         - src/
+        - tests/
+    excludePaths:
+        # Stand-ins for WordPress functions the WordPress stubs already declare.
+        - tests/Support/functions.php
     scanDirectories:
         - wp-content/plugins/simple-history/
     tmpDir: .cache/phpstan/

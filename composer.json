@@ -43,6 +43,7 @@
     "phpstan/phpstan": "^2",
     "phpstan/phpstan-deprecation-rules": "^2",
     "phpstan/phpstan-webmozart-assert": "^2",
+    "phpunit/phpunit": "^12.5",
     "slevomat/coding-standard": "^8.15",
     "squizlabs/php_codesniffer": "^3.7.1",
     "szepeviktor/phpstan-wordpress": "^2.0",
@@ -71,6 +72,15 @@
     },
     "files": ["src/helpers.php"]
   },
+  "autoload-dev": {
+    "psr-4": {
+      "Kleinweb\\Lib\\Tests\\": "tests/",
+      "App\\": "examples/multisite/wp-content/mu-plugins/example/app/",
+      "Kleinweb\\Sites\\News\\": "examples/multisite/wp-content/plugins/kleinweb-site-news/src/",
+      "Kleinweb\\Themes\\Base\\": "examples/multisite/wp-content/themes/kleinweb-base/src/",
+      "Kleinweb\\Themes\\News\\": "examples/multisite/wp-content/themes/kleinweb-news/src/"
+    }
+  },
   "extra": {
     "installer-paths": {
       "wp-content/mu-plugins/{$name}/": ["type:wordpress-muplugin"],
@@ -90,7 +100,8 @@
     "phpcbf": "phpcbf --extensions=php --standard=$PRJ_ROOT/.phpcs.xml.dist",
     "phpcs": "phpcs --extensions=php --standard=$PRJ_ROOT/.phpcs.xml.dist",
     "phpstan": "phpstan analyse --memory-limit 2G",
-    "check": ["@check-syntax .", "@php-cs-fixer check", "@phpcs", "@phpstan"],
+    "phpunit": "phpunit",
+    "check": ["@check-syntax .", "@php-cs-fixer check", "@phpcs", "@phpstan", "@phpunit"],
     "lint": ["@check-syntax", "@phpcs", "@phpstan"],
     "fix": ["@php-cs-fixer fix", "@phpcbf"],
     "post-autoload-dump": ["Roots\\Acorn\\ComposerScripts::postAutoloadDump"]

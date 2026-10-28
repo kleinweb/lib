@@ -9,6 +9,10 @@ SPDX-License-Identifier: CC0-1.0
     <file>./.php-cs-fixer.dist.php</file>
 
     <file>./src</file>
+    <file>./tests</file>
+
+    <!-- Stand-ins for WordPress functions: global, Core's names and signatures. -->
+    <exclude-pattern>./tests/Support/functions.php</exclude-pattern>
 
     <rule ref="Kleinweb">
         <!-- TODO: Customize rules as needed. -->
