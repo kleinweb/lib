@@ -65,6 +65,16 @@ final class MakeSite extends Command
             return self::FAILURE;
         }
 
+        // Check the target site before writing anything.
+        $url = $this->option('url');
+        $site = null;
+        if (is_string($url) && $url !== '') {
+            $site = $this->siteToAssign($sites, $url, $key);
+            if ($site === false) {
+                return self::FAILURE;
+            }
+        }
+
         $namespace = rtrim(SitePlugin::namespace($key), '\\');
         $provider = "{$studly}ServiceProvider";
         $plugin = SitePlugin::path($key);
@@ -77,8 +87,12 @@ final class MakeSite extends Command
                 $provider,
                 $key,
             ),
-            "{$plugin}/config/.gitkeep" => '',
         ];
+
+        // Keeps an empty config/ in Git; not needed once it has files.
+        if (!$files->isDirectory("{$plugin}/config")) {
+            $targets["{$plugin}/config/.gitkeep"] = '';
+        }
 
         foreach ($targets as $path => $contents) {
             if ($files->exists($path) && !$this->option('force')) {
@@ -102,12 +116,14 @@ final class MakeSite extends Command
             ),
         ]);
 
-        $url = $this->option('url');
-        if (is_string($url) && $url !== '') {
-            return $this->assignTo($sites, $url, $key);
+        if ($site instanceof Site) {
+            return $this->call('site:assign-keys', [
+                '--id' => (string) $site->id(),
+                '--key' => $key->value,
+            ]);
         }
 
-        if ($sites->find($key) === null) {
+        if ($site === null && $sites->find($key) === null) {
             $this->components->warn(sprintf(
                 'No site has the key "%s" yet; set it with '
                 . '`make:site %s --url=<site url>` or `site:assign-keys --id=<blog id> --key=%s`.',
@@ -121,10 +137,10 @@ final class MakeSite extends Command
     }
 
     /**
-     * Give the key to the site at a URL, through `site:assign-keys`, which
-     * refuses a key another site has and a site that already has one.
+     * The site at a URL that should get the key: the site, `true` if it
+     * already has the key, or `false` (after reporting why) if it cannot.
      */
-    private function assignTo(SiteRepository $sites, string $url, SiteKey $key): int
+    private function siteToAssign(SiteRepository $sites, string $url, SiteKey $key): Site|bool
     {
         $target = self::domainOf($url);
         $site = $sites->all()->first(
@@ -134,19 +150,36 @@ final class MakeSite extends Command
         if ($site === null) {
             $this->components->error("No site has the URL <{$url}>.");
 
-            return self::FAILURE;
+            return false;
         }
 
-        if ($site->key()?->equals($key) ?? false) {
-            $this->components->info("Site {$site->id()} already has the key \"{$key->value}\".");
-
-            return self::SUCCESS;
+        $stored = $site->storedKey();
+        if ($stored === $key->value) {
+            return true;
         }
 
-        return $this->call('site:assign-keys', [
-            '--id' => (string) $site->id(),
-            '--key' => $key->value,
-        ]);
+        if ($stored !== null) {
+            $this->components->error(sprintf(
+                'Site %d already has the key "%s"; change it with `site:assign-keys --force`.',
+                $site->id(),
+                $stored,
+            ));
+
+            return false;
+        }
+
+        $owner = $sites->find($key);
+        if ($owner !== null) {
+            $this->components->error(sprintf(
+                'The key "%s" is already used by site %d.',
+                $key->value,
+                $owner->id(),
+            ));
+
+            return false;
+        }
+
+        return $site;
     }
 
     private static function domainOf(string $url): Domain
