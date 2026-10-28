@@ -9,15 +9,20 @@ namespace Kleinweb\Lib\Console\Commands\Tenancy;
 
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
+use Kleinweb\Lib\Database\Models\Site;
+use Kleinweb\Lib\Tenancy\Domain;
 use Kleinweb\Lib\Tenancy\Exceptions\InvalidSiteKey;
 use Kleinweb\Lib\Tenancy\SiteKey;
 use Kleinweb\Lib\Tenancy\SitePlugin;
 use Kleinweb\Lib\Tenancy\SiteRepository;
 
+use function is_array;
 use function is_string;
 use function json_encode;
+use function parse_url;
 use function rtrim;
 use function sprintf;
+use function str_contains;
 use function str_replace;
 use function ucwords;
 
@@ -37,6 +42,7 @@ final class MakeSite extends Command
      */
     protected $signature = 'make:site
         {key : The site key}
+        {--url= : Also give this key to the site at this URL, if it has none}
         {--force : Overwrite files that already exist}';
 
     /**
@@ -96,16 +102,60 @@ final class MakeSite extends Command
             ),
         ]);
 
+        $url = $this->option('url');
+        if (is_string($url) && $url !== '') {
+            return $this->assignTo($sites, $url, $key);
+        }
+
         if ($sites->find($key) === null) {
             $this->components->warn(sprintf(
                 'No site has the key "%s" yet; set it with '
-                . '`site:assign-keys --id=<blog id> --key=%s`.',
+                . '`make:site %s --url=<site url>` or `site:assign-keys --id=<blog id> --key=%s`.',
+                $key->value,
                 $key->value,
                 $key->value,
             ));
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * Give the key to the site at a URL, through `site:assign-keys`, which
+     * refuses a key another site has and a site that already has one.
+     */
+    private function assignTo(SiteRepository $sites, string $url, SiteKey $key): int
+    {
+        $target = self::domainOf($url);
+        $site = $sites->all()->first(
+            static fn (Site $site): bool => (string) $site->domain() === (string) $target,
+        );
+
+        if ($site === null) {
+            $this->components->error("No site has the URL <{$url}>.");
+
+            return self::FAILURE;
+        }
+
+        if ($site->key()?->equals($key) ?? false) {
+            $this->components->info("Site {$site->id()} already has the key \"{$key->value}\".");
+
+            return self::SUCCESS;
+        }
+
+        return $this->call('site:assign-keys', [
+            '--id' => (string) $site->id(),
+            '--key' => $key->value,
+        ]);
+    }
+
+    private static function domainOf(string $url): Domain
+    {
+        $parts = parse_url(str_contains($url, '://') ? $url : "https://{$url}");
+        $host = is_array($parts) ? ($parts['host'] ?? '') : '';
+        $path = is_array($parts) ? ($parts['path'] ?? '/') : '/';
+
+        return new Domain($host, $path);
     }
 
     private function pluginStub(SiteKey $key): string

@@ -9,8 +9,11 @@ namespace Kleinweb\Lib\Console\Commands\Tenancy;
 
 use Illuminate\Console\Command;
 use Kleinweb\Lib\Database\Models\Site;
+use Kleinweb\Lib\Tenancy\SitePlugin;
 use Kleinweb\Lib\Tenancy\SiteRepository;
 
+use function get_blog_option;
+use function is_string;
 use function json_encode;
 
 use const JSON_PRETTY_PRINT;
@@ -49,6 +52,8 @@ final class ListSites extends Command
                 'key' => $site->storedKey(),
                 'url' => $site->url(),
                 'original_host' => $site->originalDomain()?->host,
+                'site_plugin' => self::sitePlugin($site),
+                'theme' => self::theme($site),
                 'status' => self::status($site, $keyCounts->all()),
             ])
             ->values()
@@ -62,9 +67,37 @@ final class ListSites extends Command
             return self::SUCCESS;
         }
 
-        $this->table(['Blog ID', 'Key', 'URL', 'Original host', 'Status'], $rows);
+        $this->table(
+            ['Blog ID', 'Key', 'URL', 'Original host', 'Site plugin', 'Theme', 'Status'],
+            $rows,
+        );
 
         return self::SUCCESS;
+    }
+
+    /**
+     * The site plugin's directory, if the site has one.
+     */
+    private static function sitePlugin(Site $site): ?string
+    {
+        $key = $site->key();
+
+        return ($key !== null && SitePlugin::exists($key)) ? SitePlugin::directory($key) : null;
+    }
+
+    /**
+     * The active theme, as `child (parent)` for a child theme.
+     */
+    private static function theme(Site $site): string
+    {
+        $stylesheet = get_blog_option($site->id(), 'stylesheet');
+        $template = get_blog_option($site->id(), 'template');
+        $stylesheet = is_string($stylesheet) ? $stylesheet : '';
+        $template = is_string($template) ? $template : '';
+
+        return ($template !== '' && $template !== $stylesheet)
+            ? "{$stylesheet} ({$template})"
+            : $stylesheet;
     }
 
     /**

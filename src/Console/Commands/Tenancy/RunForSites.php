@@ -9,11 +9,19 @@ namespace Kleinweb\Lib\Console\Commands\Tenancy;
 
 use Illuminate\Console\Command;
 use Kleinweb\Lib\Console\Concerns\InteractsWithSites;
+use Kleinweb\Lib\Database\Models\Site;
 use Symfony\Component\Process\Process;
 
+use function array_filter;
+use function array_shift;
+use function count;
 use function escapeshellarg;
+use function filter_var;
 use function is_string;
 use function sprintf;
+use function usleep;
+
+use const FILTER_VALIDATE_INT;
 
 /**
  * Run an Acorn command once per site, each in its own process.
@@ -35,6 +43,7 @@ final class RunForSites extends Command
         {commandline : The Acorn command to run, quoted, e.g. "cache:clear"}
         {--sites=* : Only run for these site keys}
         {--skip-sites=* : Skip these site keys}
+        {--parallel=1 : Run this many sites at once; output is shown per site as each finishes}
         {--wp=wp : Path to the WP-CLI executable}';
 
     /**
@@ -43,6 +52,9 @@ final class RunForSites extends Command
      * @var string
      */
     protected $description = 'Run an Acorn command for each site, in a separate process per site';
+
+    /** @var list<array{string, string, int}> site label, URL, exit code */
+    private array $results = [];
 
     public function handle(): int
     {
@@ -54,33 +66,79 @@ final class RunForSites extends Command
             return self::FAILURE;
         }
 
-        $selected = $this->selectedSites();
+        $parallel = filter_var(
+            $this->option('parallel'),
+            FILTER_VALIDATE_INT,
+            ['options' => ['min_range' => 1]],
+        );
+        if ($parallel === false) {
+            $this->components->error('--parallel must be a positive integer.');
 
-        $results = [];
-        $failed = 0;
-
-        foreach ($selected as $site) {
-            $label = $this->siteLabel($site);
-            $this->components->info(sprintf('%s <%s>', $label, $site->url()));
-
-            $process = Process::fromShellCommandline(sprintf(
-                '%s --url=%s acorn %s',
-                $wp,
-                escapeshellarg($site->url()),
-                $commandline,
-            ));
-            $process->setTimeout(null);
-            $process->run(function (string $_type, string $buffer): void {
-                $this->output->write($buffer);
-            });
-
-            $code = $process->getExitCode() ?? 1;
-            $failed += ($code === 0) ? 0 : 1;
-            $results[] = [$label, $site->url(), $code];
+            return self::FAILURE;
         }
 
-        $this->table(['Site', 'URL', 'Exit code'], $results);
+        /** @var array<string, array{Site, Process}> $running label => [site, process] */
+        $running = [];
+        $pending = $this->selectedSites()->values()->all();
 
-        return ($failed === 0) ? self::SUCCESS : self::FAILURE;
+        while ($pending !== [] || $running !== []) {
+            while ($pending !== [] && count($running) < $parallel) {
+                $site = array_shift($pending);
+                $process = $this->process($wp, $site, $commandline);
+                $label = $this->siteLabel($site);
+
+                if ($parallel === 1) {
+                    // One at a time: stream output as it comes.
+                    $this->components->info(sprintf('%s <%s>', $label, $site->url()));
+                    $process->run(function (string $_type, string $buffer): void {
+                        $this->output->write($buffer);
+                    });
+                    $this->record($site, $label, $process);
+
+                    continue;
+                }
+
+                $process->start();
+                $running[$label] = [$site, $process];
+            }
+
+            foreach ($running as $label => [$site, $process]) {
+                if ($process->isRunning()) {
+                    continue;
+                }
+
+                unset($running[$label]);
+                $this->components->info(sprintf('%s <%s>', $label, $site->url()));
+                $this->output->write($process->getOutput() . $process->getErrorOutput());
+                $this->record($site, $label, $process);
+            }
+
+            if ($running !== []) {
+                usleep(50000);
+            }
+        }
+
+        $this->table(['Site', 'URL', 'Exit code'], $this->results);
+        $failed = array_filter($this->results, static fn (array $row): bool => $row[2] !== 0);
+
+        return ($failed === []) ? self::SUCCESS : self::FAILURE;
+    }
+
+    private function process(string $wp, Site $site, string $commandline): Process
+    {
+        $process = Process::fromShellCommandline(sprintf(
+            '%s --url=%s acorn %s',
+            $wp,
+            escapeshellarg($site->url()),
+            $commandline,
+        ));
+        $process->setTimeout(null);
+
+        return $process;
+    }
+
+    private function record(Site $site, string $label, Process $process): void
+    {
+        $this->results[] = [$label, $site->url(), $process->getExitCode() ?? 1];
     }
 }
