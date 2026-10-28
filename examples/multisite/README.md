@@ -109,6 +109,7 @@ On a request for `news`:
 | `config('mail.from.address')` | `news@klein.temple.edu` | `config/mail.php` overlay; `mail.default` unchanged |
 | post types | `post`, `page`, `profile` (news icon), `story` | shared `config/post-types.php` plus overlay |
 | `/desks.json`, `news:import-wire` | present | registered by `NewsServiceProvider` |
+| `RebuildDeskIndex::dispatch()` | queued on `site-news` | `RunsOnSiteWorker` |
 
 On a request for `events`, none of the news code is registered: `Masthead`
 is `DefaultMasthead`, `Layout` is the parent's, the shared composer and view
@@ -145,6 +146,26 @@ Plain `switch_to_blog()` in any code works as it does in Core, plus the
 config overlay and cache follow it. Post types do not follow a plain switch;
 use `forEachSite()` or `ContentTypeRegistrar::runFor()` when writing another
 site's content.
+
+## Queues
+
+One worker serves the whole network by default. Acorn records the
+dispatching blog with each job and switches to it while the job runs, so
+data, the per-blog cache and the site plugin's config follow. The worker
+has only the providers of the site it was started for, so most jobs should
+resolve nothing site-specific.
+
+A job that needs its site's bindings implements `ShouldRunOnSiteWorker` and
+uses `RunsOnSiteWorker`, like `kleinweb-site-news/src/Jobs/RebuildDeskIndex.php`.
+It goes on its site's queue and runs on that site's worker:
+
+```sh
+wp --url=news.example.test acorn queue:work --queue=site-news
+```
+
+A worker for any other site fails such a job (`WrongSiteWorker`) instead of
+running it with the wrong bindings. After every job, the worker is returned
+to the blog it was on, even if the job left its own switches unrestored.
 
 ## Post types
 

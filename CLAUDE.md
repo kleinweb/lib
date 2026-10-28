@@ -29,7 +29,11 @@ just fix
 # Format only (safe changes)
 just fmt
 
+# Tests (PHPUnit, tests/)
+just test
+
 # Individual PHP tools via composer
+composer phpunit          # Tests
 composer phpstan          # Static analysis (level 8)
 composer phpcs            # Code sniffer
 composer phpcbf           # Code sniffer auto-fix
@@ -38,6 +42,12 @@ composer php-cs-fixer fix # Code style fixer
 
 PHPStan output is cached in `.cache/phpstan/`. The baseline is in
 `phpstan-baseline.neon`.
+
+Tests run without WordPress: `tests/Support/functions.php` stands in for the
+Core functions the library calls, following Core's behaviour where the
+library depends on it (switch stack, option filters, post type and taxonomy
+linking). `examples/multisite/` is the fixture; its classes are in
+`autoload-dev`, so changing the example can break tests.
 
 ## Architecture
 
@@ -186,6 +196,16 @@ Multisite support mirrors Core: code is per process, data follows the switch.
   work that needs another site's bindings uses `site:run`.
 - Code that sets a config key a site overlay also sets, while switched, loses
   that change on the next switch.
+
+#### Queues
+
+Acorn records the dispatching blog with each job and switches to it.
+`Tenancy\Queue\SiteJobs` adds the site key to payloads, fails a
+`Tenancy\Queue\ShouldRunOnSiteWorker` job on a worker for another site
+(`WrongSiteWorker`), and unwinds switches a job leaves. Jobs that need their
+site's bindings use `Tenancy\Queue\RunsOnSiteWorker`, which queues them on
+`site-{key}` (`Tenancy\SiteQueue`), processed by
+`wp --url=<site> acorn queue:work --queue=site-{key}`.
 
 Discovery results can be cached with `site:cache` (`Tenancy\Discovery\SiteManifest`).
 Commands: `site:list`, `site:assign-keys`, `site:run`, `site:check`,
