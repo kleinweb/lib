@@ -60,8 +60,13 @@ application.
    ```sh
    wp acorn site:assign-keys --dry-run
    wp acorn site:assign-keys
-   wp acorn site:assign-keys --id=3 --key=events
+   wp acorn site:assign-keys --id=1 --key=main
    ```
+
+   Keys are derived from each site's host (or its original host, if
+   `site:demap-domains` recorded one) by the same rule as
+   `site:demap-domains`. The main site, and any site whose derived key is
+   taken or reserved, gets one with `--id`.
 
 3. There is nothing to activate. A site plugin applies to the site whose key
    it is named for, as soon as it exists. `SitePluginLoader::register()`, in
@@ -81,14 +86,15 @@ application.
    wp acorn site:check
    ```
 
-New site plugins come from `wp acorn make:site <key>`.
+New site plugins come from `wp acorn make:site <key>`; add
+`--url=<site url>` to give that site the key at the same time.
 
 ## What happens on a request
 
 WordPress loads plugins, including the site's own site plugin, and the theme
 as usual. The application mu-plugin boots Acorn on `after_setup_theme` with
-the shared providers. After every shared provider
-has registered and before any boots, `TenancyServiceProvider`:
+the shared providers. After every shared provider has registered and before
+any boots, `TenancyServiceProvider`:
 
 1. registers the requested site's providers, least specific first, so later
    bindings win:
@@ -142,6 +148,9 @@ acorn …` has the news providers, and `wp acorn …` has the main site's.
   wp acorn site:run news:import-wire --sites=news
   ```
 
+  `site:run` starts one process per site; `--parallel=4` runs four at a
+  time.
+
 Plain `switch_to_blog()` in any code works as it does in Core, plus the
 config overlay and cache follow it. Post types do not follow a plain switch;
 use `forEachSite()` or `ContentTypeRegistrar::runFor()` when writing another
@@ -188,4 +197,4 @@ wp acorn site:clear
 ```
 
 `route:cache` is network-wide, so site plugin routes are skipped while routes
-are cached; `site:check` warns about it.
+are cached; `site:check` reports it.
