@@ -42,25 +42,25 @@ use function sort;
  */
 final class SitePluginLoader
 {
-    private static bool $registered = false;
+    private const array READ = [self::class, 'addOwnPlugin'];
+
+    private const array WRITE = [self::class, 'removeSitePlugins'];
 
     private static bool $suspended = false;
 
     public static function register(): void
     {
-        if (self::$registered || !function_exists('is_multisite') || !is_multisite()) {
+        if (self::isRegistered() || !function_exists('is_multisite') || !is_multisite()) {
             return;
         }
 
-        self::$registered = true;
-
-        add_filter('option_active_plugins', self::addOwnPlugin(...), 0);
-        add_filter('pre_update_option_active_plugins', self::removeSitePlugins(...), 0);
+        add_filter('option_active_plugins', self::READ, 0);
+        add_filter('pre_update_option_active_plugins', self::WRITE, 0);
     }
 
     public static function isRegistered(): bool
     {
-        return self::$registered && has_filter('option_active_plugins') !== false;
+        return has_filter('option_active_plugins', self::READ) !== false;
     }
 
     /**

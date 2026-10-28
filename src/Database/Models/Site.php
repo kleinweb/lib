@@ -146,16 +146,24 @@ final class Site extends Model
         try {
             return $callback($this);
         } finally {
-            while (self::switchDepth() > $depth && restore_current_blog()) {
-                // Unwind to the depth this call started at.
-            }
+            self::unwindTo($depth);
+        }
+    }
+
+    /**
+     * Restore blogs until at most `$depth` switches remain.
+     */
+    public static function unwindTo(int $depth): void
+    {
+        while (self::switchDepth() > $depth && restore_current_blog()) {
+            // Each call pops one switch.
         }
     }
 
     /**
      * Number of unrestored `switch_to_blog()` calls.
      */
-    private static function switchDepth(): int
+    public static function switchDepth(): int
     {
         $stack = $GLOBALS['_wp_switched_stack'] ?? [];
 

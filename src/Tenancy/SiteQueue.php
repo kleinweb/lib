@@ -10,6 +10,8 @@ namespace Kleinweb\Lib\Tenancy;
 use Kleinweb\Lib\Database\Models\Site;
 use Kleinweb\Lib\Tenancy\Exceptions\InvalidSiteKey;
 
+use function get_current_blog_id;
+
 /**
  * Queue names for sites that run their own workers.
  *
@@ -22,6 +24,8 @@ use Kleinweb\Lib\Tenancy\Exceptions\InvalidSiteKey;
  * dispatch(new RebuildIndex())->onQueue(SiteQueue::name($site));
  * ```
  *
+ * (or, for a job that implements {@see Queue\ShouldRunOnSiteWorker}, with
+ * {@see Queue\RunsOnSiteWorker}, which picks the dispatching site's queue),
  * and is processed by a worker started for that site:
  *
  * ```sh
@@ -44,5 +48,18 @@ final class SiteQueue
         };
 
         return self::PREFIX . $key->value;
+    }
+
+    /**
+     * The queue of the current blog, following `switch_to_blog()`.
+     *
+     * @throws InvalidSiteKey if the current blog has no key
+     */
+    public static function current(): string
+    {
+        $key = SitePlugin::keyForBlog(get_current_blog_id())
+            ?? throw InvalidSiteKey::forValue('');
+
+        return self::name($key);
     }
 }

@@ -10,6 +10,7 @@ namespace Kleinweb\Lib\Tenancy;
 use Illuminate\Contracts\Debug\ExceptionHandler;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Foundation\Application;
+use Illuminate\Queue\Queue;
 use Illuminate\Support\ServiceProvider;
 use Kleinweb\Lib\Console\Commands\Tenancy\AssignSiteKeys;
 use Kleinweb\Lib\Console\Commands\Tenancy\CacheSites;
@@ -24,10 +25,12 @@ use Kleinweb\Lib\Tenancy\Bootstrappers\ConfigBootstrapper;
 use Kleinweb\Lib\Tenancy\Contracts\BlogBootstrapper;
 use Kleinweb\Lib\Tenancy\Contracts\SiteBootstrapper;
 use Kleinweb\Lib\Tenancy\Discovery\SiteManifest;
+use Kleinweb\Lib\Tenancy\Queue\SiteJobs;
 use Throwable;
 use Webmozart\Assert\Assert;
 
 use function add_action;
+use function class_exists;
 use function count;
 use function get_current_blog_id;
 use function function_exists;
@@ -131,6 +134,11 @@ final class TenancyServiceProvider extends ServiceProvider
         $context->initialize($site, get_current_blog_id());
 
         (new SitePluginGuard($this->report(...)))->register();
+
+        // Before Acorn adds its own queue listeners, which it does on boot.
+        if (class_exists(Queue::class)) {
+            (new SiteJobs($context))->register($this->app->make(Dispatcher::class));
+        }
 
         // Acorn's own handler (priority 10) sets `cache.prefix` and
         // `session.cookie` for the new blog first.
