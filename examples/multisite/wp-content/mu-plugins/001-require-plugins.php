@@ -12,7 +12,10 @@ declare(strict_types=1);
 // plugins here with alleyinteractive/wp-plugin-loader; a plain require is
 // enough for the example.
 //
-// Site plugins (kleinweb-site-*) are never loaded here: each is activated in
-// WordPress on its own site, which is what scopes it to that site.
+// Never list a site plugin (kleinweb-site-*) in wp-plugin-loader: it makes
+// plugins active on every site.  SitePluginLoader loads each site's own
+// plugin on that site only.
+
+Kleinweb\Lib\Tenancy\SitePluginLoader::register();
 
 require __DIR__ . '/example/example.php';

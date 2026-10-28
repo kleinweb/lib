@@ -63,15 +63,16 @@ application.
    wp acorn site:assign-keys --id=3 --key=events
    ```
 
-3. Activate each site plugin on its own site. Network activation is refused
-   (`wp_die()` for an interactive activation; a silent one is undone and
-   reported), and a site plugin that is network-active anyway applies
-   nowhere and fails `site:check`:
+3. There is nothing to activate. A site plugin applies to the site whose key
+   it is named for, as soon as it exists. `SitePluginLoader::register()`, in
+   `wp-content/mu-plugins/001-require-plugins.php`, makes WordPress load
+   `kleinweb-site-news` on the news site and nowhere else; it shows as active
+   there and cannot be activated or deactivated anywhere. Activation, per
+   site or network-wide, is refused, and one already stored fails
+   `site:check`.
 
-   ```sh
-   wp --url=news.example.test plugin activate kleinweb-site-news
-   wp --url=events.example.test plugin activate kleinweb-site-events
-   ```
+   Do not list a site plugin in `alleyinteractive/wp-plugin-loader`: that
+   loader makes plugins active on every site.
 
 4. Check the layout:
 
@@ -84,14 +85,15 @@ New site plugins come from `wp acorn make:site <key>`.
 
 ## What happens on a request
 
-WordPress loads plugins and the theme as usual. The application mu-plugin
-boots Acorn on `after_setup_theme` with the shared providers. After every shared provider
+WordPress loads plugins, including the site's own site plugin, and the theme
+as usual. The application mu-plugin boots Acorn on `after_setup_theme` with
+the shared providers. After every shared provider
 has registered and before any boots, `TenancyServiceProvider`:
 
 1. registers the requested site's providers, least specific first, so later
    bindings win:
-   - the site plugin's (`kleinweb-site-{key}/composer.json`), only if it is
-     active on this site;
+   - the site plugin's (`kleinweb-site-{key}/composer.json`), for this
+     site's key only;
    - the parent theme's;
    - the child theme's;
 2. overlays the site plugin's `config/*.php` on the shared config.
