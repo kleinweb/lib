@@ -35,7 +35,7 @@
             inherit system;
             overlays = [
               (_final: prev: {
-                php = prev.php83;
+                php = prev.php84;
               })
             ];
           };
