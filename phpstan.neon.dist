@@ -9,8 +9,10 @@ includes:
 parameters:
     level: 8
     inferPrivatePropertyTypeFromConstructor: true
+    tmpDir: .cache/phpstan/
+
     paths:
         - src/
+
     scanDirectories:
         - wp-content/plugins/simple-history/
-    tmpDir: .cache/phpstan/

@@ -4,6 +4,7 @@
     "includes": [
       "**",
       "!.changeset/",
+      "!.ddev/",
       "!**/composer.lock",
       "!**/dist/",
       "!**/*.min.*",

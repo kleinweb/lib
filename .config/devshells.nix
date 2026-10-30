@@ -33,6 +33,7 @@
         pkgs.gnused
         pkgs.jq
         pkgs.moreutils
+        pkgs.reuse
         pkgs.ripgrep
         pkgs.nodejs
         pkgs.php
