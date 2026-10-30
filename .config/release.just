@@ -5,7 +5,6 @@ set no-cd
 
 import "common.vars.just"
 
-semver-regexp := '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
 wp-header-version-prefix-regexp := '(\s*)(\*\s)?Version:(\s+)'
 
 [confirm: "Prepare and tag release?"]

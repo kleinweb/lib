@@ -7,6 +7,9 @@ open := if os_family() == "linux" { "xdg-open" } else { "open" }
 # <https://datatracker.ietf.org/doc/html/rfc9562#name-nil-uuid>
 uuid-nil := '00000000-0000-0000-0000-000000000000'
 
+# <https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string>
+semver-regexp := '^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$'
+
 # === Project ===
 
 prj-root := env('PRJ_ROOT')
