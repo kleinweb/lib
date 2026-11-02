@@ -9,7 +9,7 @@ check:
 
 [doc("Run the test suite")]
 test *args:
-    composer phpunit -- {{ args }}
+    composer test -- {{ args }}
 
 [doc("Check for non-stylistic linting issues on project files")]
 lint:

@@ -43,7 +43,7 @@
     "phpstan/phpstan": "^2",
     "phpstan/phpstan-deprecation-rules": "^2",
     "phpstan/phpstan-webmozart-assert": "^2",
-    "phpunit/phpunit": "^12.5",
+    "pestphp/pest": "^4.0",
     "slevomat/coding-standard": "^8.15",
     "squizlabs/php_codesniffer": "^3.7.1",
     "szepeviktor/phpstan-wordpress": "^2.0",
@@ -55,6 +55,7 @@
       "alleyinteractive/composer-wordpress-autoloader": true,
       "composer/installers": true,
       "dealerdirect/phpcodesniffer-composer-installer": true,
+      "pestphp/pest-plugin": false,
       "phpstan/extension-installer": true
     },
     "lock": false,
@@ -79,7 +80,8 @@
       "Kleinweb\\Sites\\News\\": "examples/multisite/wp-content/plugins/kleinweb-site-news/src/",
       "Kleinweb\\Themes\\Base\\": "examples/multisite/wp-content/themes/kleinweb-base/src/",
       "Kleinweb\\Themes\\News\\": "examples/multisite/wp-content/themes/kleinweb-news/src/"
-    }
+    },
+    "exclude-from-classmap": ["tests/Support/functions.php"]
   },
   "extra": {
     "installer-paths": {
@@ -100,10 +102,13 @@
     "phpcbf": "phpcbf --extensions=php --standard=$PRJ_ROOT/.phpcs.xml.dist",
     "phpcs": "phpcs --extensions=php --standard=$PRJ_ROOT/.phpcs.xml.dist",
     "phpstan": "phpstan analyse --memory-limit 2G",
-    "phpunit": "phpunit",
-    "check": ["@check-syntax .", "@php-cs-fixer check", "@phpcs", "@phpstan", "@phpunit"],
+    "test": "pest",
+    "check": ["@check-syntax .", "@php-cs-fixer check", "@phpcs", "@phpstan", "@test"],
     "lint": ["@check-syntax", "@phpcs", "@phpstan"],
     "fix": ["@php-cs-fixer fix", "@phpcbf"],
-    "post-autoload-dump": ["Roots\\Acorn\\ComposerScripts::postAutoloadDump"]
+    "post-autoload-dump": [
+      "Roots\\Acorn\\ComposerScripts::postAutoloadDump",
+      "@php .config/pest-plugins.php"
+    ]
   }
 }
