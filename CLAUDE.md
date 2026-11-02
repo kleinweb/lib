@@ -29,11 +29,11 @@ just fix
 # Format only (safe changes)
 just fmt
 
-# Tests (PHPUnit, tests/)
+# Tests (Pest, tests/)
 just test
 
 # Individual PHP tools via composer
-composer phpunit          # Tests
+composer test             # Tests (Pest)
 composer phpstan          # Static analysis (level 8)
 composer phpcs            # Code sniffer
 composer phpcbf           # Code sniffer auto-fix
@@ -43,11 +43,20 @@ composer php-cs-fixer fix # Code style fixer
 PHPStan output is cached in `.cache/phpstan/`. The baseline is in
 `phpstan-baseline.neon`.
 
-Tests run without WordPress: `tests/Support/functions.php` stands in for the
-Core functions the library calls, following Core's behaviour where the
-library depends on it (switch stack, option filters, post type and taxonomy
-linking). `examples/multisite/` is the fixture; its classes are in
-`autoload-dev`, so changing the example can break tests.
+Tests use [Pest](https://pestphp.com/) and run without WordPress:
+`tests/Support/functions.php` stands in for the Core functions the library
+calls, following Core's behaviour where the library depends on it (switch
+stack, option filters, post type and taxonomy linking). Shared test helpers
+are namespaced functions in `tests/Support/helpers.php`. `examples/multisite/`
+is the fixture; its classes are in `autoload-dev`, so changing the example can
+break tests. PHPStan analyses `tests/Support/` but not the Pest files.
+
+Pest's Composer plugin (`pestphp/pest-plugin`) is disabled in `allow-plugins`:
+`alleyinteractive/composer-wordpress-autoloader` loads the project autoloader
+into Composer's process, and the two Symfony Console versions then collide.
+`.config/pest-plugins.php` writes `vendor/pest-plugins.json` from
+`post-autoload-dump` instead; without that file Pest runs without its own
+plugins (printer, coverage, parallel).
 
 ## Architecture
 

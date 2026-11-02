@@ -11,7 +11,11 @@ parameters:
     inferPrivatePropertyTypeFromConstructor: true
     paths:
         - src/
-        - tests/
+        # Test support code (fixtures, the fake WordPress, helpers).  Pest test
+        # files themselves are left out: their closures run bound to the test
+        # case, which PHPStan cannot follow, and the expectation API is marked
+        # @internal.
+        - tests/Support/
     excludePaths:
         # Stand-ins for WordPress functions the WordPress stubs already declare.
         - tests/Support/functions.php

@@ -3,115 +3,91 @@
 // SPDX-FileCopyrightText: (C) 2026 Temple University <kleinweb@temple.edu>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-declare(strict_types=1);
+/*
+ * `site:check` against the example project.
+ */
 
-namespace Kleinweb\Lib\Tests\Unit\Console;
+declare(strict_types=1);
 
 use Illuminate\Console\Command;
 use Illuminate\Filesystem\Filesystem;
-use Illuminate\Foundation\Application;
 use Kleinweb\Lib\Console\Commands\Tenancy\CheckSites;
 use Kleinweb\Lib\Tenancy\Discovery\SiteManifest;
 use Kleinweb\Lib\Tenancy\SitePluginLoader;
-use Kleinweb\Lib\Tenancy\SiteRepository;
-use Kleinweb\Lib\Tests\Support\TestCase;
 use Kleinweb\Lib\Tests\Support\WordPress;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\BufferedOutput;
 
-use function sys_get_temp_dir;
-use function uniqid;
+use function Kleinweb\Lib\Tests\runCommand;
+use function Kleinweb\Lib\Tests\tempPath;
+use function Kleinweb\Lib\Tests\testApplication;
 
 /**
- * `site:check` against the example project.
+ * @return array{int, string}
  */
-final class CheckSitesTest extends TestCase
+function checkSites(): array
 {
-    private const string NEWS = 'kleinweb-site-news/kleinweb-site-news.php';
+    $app = testApplication(tempPath('check'));
+    $app->instance(SiteManifest::class, new SiteManifest($app, new Filesystem()));
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        WordPress::addSite(1, 'main');
-        WordPress::addSite(2, 'news');
-        WordPress::addSite(5, 'events');
-        SitePluginLoader::register();
-    }
-
-    public function testTheExampleProjectIsClean(): void
-    {
-        [$code, $output] = $this->check();
-
-        self::assertSame(Command::SUCCESS, $code, $output);
-        self::assertStringContainsString('No problems found', $output);
-    }
-
-    public function testReportsAMissingLoader(): void
-    {
-        WordPress::$hooks = [];
-
-        self::assertProblem('SitePluginLoader::register() is not called', ...$this->check());
-    }
-
-    public function testReportsStoredAndNetworkActivations(): void
-    {
-        WordPress::$options[1]['active_plugins'] = [self::NEWS];
-        WordPress::$options[2]['active_plugins'] = [self::NEWS];
-        WordPress::$networkOptions['active_sitewide_plugins'] = [self::NEWS => 1];
-
-        [$code, $output] = $this->check();
-
-        self::assertSame(Command::FAILURE, $code);
-        self::assertStringContainsString('is network-activated', $output);
-        self::assertStringContainsString('on site 1;', $output);
-        self::assertStringContainsString('on site 2;', $output, 'stored on its own site too');
-    }
-
-    public function testReportsKeyProblems(): void
-    {
-        WordPress::addSite(6, 'news');
-        WordPress::addSite(7, 'Not Valid');
-        WordPress::addSite(8);
-        WordPress::addSite(9, 'www');
-
-        [$code, $output] = $this->check();
-
-        self::assertSame(Command::FAILURE, $code);
-        self::assertStringContainsString('key "news" is used by another site', $output);
-        self::assertStringContainsString('invalid key "Not Valid"', $output);
-        self::assertStringContainsString('no key; run site:assign-keys', $output);
-        self::assertStringContainsString('key "www" is reserved', $output);
-    }
-
-    public function testReportsASitePluginNoSiteHas(): void
-    {
-        unset(WordPress::$sites[5], WordPress::$meta[5], WordPress::$options[5]);
-
-        self::assertProblem('no site has a matching key', ...$this->check());
-    }
-
-    private static function assertProblem(string $expected, int $code, string $output): void
-    {
-        self::assertSame(Command::FAILURE, $code);
-        self::assertStringContainsString($expected, $output);
-    }
-
-    /**
-     * @return array{int, string}
-     */
-    private function check(): array
-    {
-        $app = new Application(sys_get_temp_dir() . '/' . uniqid('kleinweb-check-', true));
-        $app->instance('files', new Filesystem());
-        $app->instance(SiteRepository::class, new SiteRepository());
-        $app->instance(SiteManifest::class, new SiteManifest($app, new Filesystem()));
-
-        $command = new CheckSites();
-        $command->setLaravel($app);
-        $output = new BufferedOutput();
-        $code = $command->run(new ArrayInput([]), $output);
-
-        return [$code, $output->fetch()];
-    }
+    return runCommand(new CheckSites(), $app);
 }
+
+beforeEach(function (): void {
+    WordPress::addSite(1, 'main');
+    WordPress::addSite(2, 'news');
+    WordPress::addSite(5, 'events');
+    SitePluginLoader::register();
+});
+
+it('finds no problems in the example project', function (): void {
+    [$code, $output] = checkSites();
+
+    expect($output)->toContain('No problems found')
+        ->and($code)->toBe(Command::SUCCESS)
+    ;
+});
+
+it('reports a problem', function (Closure $arrange, array $expected): void {
+    $arrange();
+    [$code, $output] = checkSites();
+
+    expect($code)->toBe(Command::FAILURE)
+        ->and($output)->toContain(...$expected)
+    ;
+})->with([
+    'a missing loader' => [
+        static function (): void {
+            WordPress::$hooks = [];
+        },
+        ['SitePluginLoader::register() is not called'],
+    ],
+    'stored and network activations' => [
+        static function (): void {
+            $news = 'kleinweb-site-news/kleinweb-site-news.php';
+            WordPress::$options[1]['active_plugins'] = [$news];
+            WordPress::$options[2]['active_plugins'] = [$news];
+            WordPress::$networkOptions['active_sitewide_plugins'] = [$news => 1];
+        },
+        // Stored on its own site (2) counts too.
+        ['is network-activated', 'on site 1;', 'on site 2;'],
+    ],
+    'key problems' => [
+        static function (): void {
+            WordPress::addSite(6, 'news');
+            WordPress::addSite(7, 'Not Valid');
+            WordPress::addSite(8);
+            WordPress::addSite(9, 'www');
+        },
+        [
+            'key "news" is used by another site',
+            'invalid key "Not Valid"',
+            'no key; run site:assign-keys',
+            'key "www" is reserved',
+        ],
+    ],
+    'a site plugin no site has' => [
+        static function (): void {
+            unset(WordPress::$sites[5], WordPress::$meta[5], WordPress::$options[5]);
+        },
+        ['no site has a matching key'],
+    ],
+]);

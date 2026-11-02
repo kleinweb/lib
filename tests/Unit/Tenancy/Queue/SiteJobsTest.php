@@ -3,9 +3,11 @@
 // SPDX-FileCopyrightText: (C) 2026 Temple University <kleinweb@temple.edu>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-declare(strict_types=1);
+/*
+ * Blogs: 1 `main`, 2 `news`, 3 no key, 5 `events`.
+ */
 
-namespace Kleinweb\Lib\Tests\Unit\Tenancy\Queue;
+declare(strict_types=1);
 
 use Illuminate\Bus\Dispatcher as Bus;
 use Illuminate\Container\Container;
@@ -26,162 +28,34 @@ use Kleinweb\Lib\Tests\Support\Jobs\LeavesSwitched;
 use Kleinweb\Lib\Tests\Support\Jobs\RebuildSiteIndex;
 use Kleinweb\Lib\Tests\Support\PayloadJob;
 use Kleinweb\Lib\Tests\Support\RecordingQueue;
-use Kleinweb\Lib\Tests\Support\TestCase;
 use Kleinweb\Lib\Tests\Support\WordPress;
 
-use function restore_current_blog;
-use function switch_to_blog;
-
 /**
- * Blogs: 1 `main`, 2 `news`, 3 no key, 5 `events`.
+ * A job as a worker receives it.
+ *
+ * @param class-string $class
  */
-final class SiteJobsTest extends TestCase
+function queuedJob(string $siteKey, string $class): PayloadJob
 {
-    private Container $container;
+    return new PayloadJob(['siteKey' => $siteKey, 'data' => ['commandName' => $class]]);
+}
 
-    private Dispatcher $events;
+beforeEach(function (): void {
+    WordPress::addSite(1, 'main');
+    WordPress::addSite(2, 'news');
+    WordPress::addSite(3);
+    WordPress::addSite(5, 'events');
+    RebuildSiteIndex::$ranOn = [];
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+    $this->container = new Container();
+    Container::setInstance($this->container);
+    $this->events = new Dispatcher($this->container);
+    $this->container->instance('events', $this->events);
+    $this->container->instance(DispatcherContract::class, $this->events);
+    $this->container->instance(ContainerContract::class, $this->container);
 
-        WordPress::addSite(1, 'main');
-        WordPress::addSite(2, 'news');
-        WordPress::addSite(3);
-        WordPress::addSite(5, 'events');
-        RebuildSiteIndex::$ranOn = [];
-
-        $this->container = new Container();
-        Container::setInstance($this->container);
-        $this->events = new Dispatcher($this->container);
-        $this->container->instance('events', $this->events);
-        $this->container->instance(DispatcherContract::class, $this->events);
-        $this->container->instance(ContainerContract::class, $this->container);
-    }
-
-    protected function tearDown(): void
-    {
-        Queue::createPayloadUsing(null);
-        Container::setInstance(null);
-    }
-
-    public function testRoutesToTheDispatchingSitesQueue(): void
-    {
-        $queue = new RecordingQueue();
-        $bus = new Bus($this->container, static fn () => $queue);
-
-        switch_to_blog(2);
-        $bus->dispatch(new RebuildSiteIndex());
-        $bus->dispatch((new RebuildSiteIndex())->onQueue('default')->delay(30));
-        restore_current_blog();
-
-        self::assertSame('site-news', $queue->pushed[0]['queue']);
-        self::assertNull($queue->pushed[0]['delay']);
-        self::assertSame('site-news', $queue->pushed[1]['queue'], 'the site queue wins');
-        self::assertSame(30, $queue->pushed[1]['delay']);
-    }
-
-    public function testDispatchingFromABlogWithoutAKeyThrows(): void
-    {
-        $bus = new Bus($this->container, static fn () => new RecordingQueue());
-
-        switch_to_blog(3);
-        try {
-            $this->expectException(InvalidSiteKey::class);
-            $bus->dispatch(new RebuildSiteIndex());
-        } finally {
-            restore_current_blog();
-        }
-    }
-
-    public function testRunsOnItsOwnSitesWorker(): void
-    {
-        $bus = $this->syncBus(workerSite: 2);
-
-        switch_to_blog(2);
-        $bus->dispatch(new RebuildSiteIndex());
-        restore_current_blog();
-
-        self::assertSame([2], RebuildSiteIndex::$ranOn);
-    }
-
-    public function testFailsOnAnotherSitesWorkerWithoutRunning(): void
-    {
-        $bus = $this->syncBus(workerSite: 1);
-
-        switch_to_blog(2);
-        try {
-            $bus->dispatch(new RebuildSiteIndex());
-            self::fail('Expected WrongSiteWorker.');
-        } catch (WrongSiteWorker $e) {
-            self::assertStringContainsString('site "news"', $e->getMessage());
-            self::assertStringContainsString('worker for site "main"', $e->getMessage());
-        } finally {
-            restore_current_blog();
-        }
-
-        self::assertSame([], RebuildSiteIndex::$ranOn);
-    }
-
-    public function testAWorkerForAnotherSiteFailsTheJobWithoutThrowing(): void
-    {
-        $jobs = $this->siteJobs(workerSite: 1);
-        $job = self::job('news', RebuildSiteIndex::class);
-
-        $jobs->processing(new JobProcessing('redis', $job));
-
-        self::assertTrue($job->hasFailed());
-        self::assertInstanceOf(WrongSiteWorker::class, $job->failedWith);
-    }
-
-    public function testAWorkerLeavesOtherJobsAlone(): void
-    {
-        $jobs = $this->siteJobs(workerSite: 1);
-        $network = self::job('news', LeavesSwitched::class);
-        $own = self::job('main', RebuildSiteIndex::class);
-
-        $jobs->processing(new JobProcessing('redis', $network));
-        $jobs->processing(new JobProcessing('redis', $own));
-
-        self::assertFalse($network->hasFailed());
-        self::assertFalse($own->hasFailed());
-    }
-
-    public function testUnwindsSwitchesAJobLeaves(): void
-    {
-        $bus = $this->syncBus(workerSite: 1);
-
-        $bus->dispatch(new LeavesSwitched());
-
-        self::assertSame(1, \get_current_blog_id());
-        self::assertSame(0, Site::switchDepth());
-    }
-
-    public function testUnwindsOnlyToWhereTheJobStarted(): void
-    {
-        $bus = $this->syncBus(workerSite: 1);
-
-        switch_to_blog(2);
-        $bus->dispatch(new LeavesSwitched());
-
-        self::assertSame(2, \get_current_blog_id());
-        self::assertSame(1, Site::switchDepth());
-        restore_current_blog();
-    }
-
-    /**
-     * @param class-string $class
-     */
-    private static function job(string $siteKey, string $class): PayloadJob
-    {
-        return new PayloadJob(['siteKey' => $siteKey, 'data' => ['commandName' => $class]]);
-    }
-
-    /**
-     * The listeners, in a process initialized for a blog.
-     */
-    private function siteJobs(int $workerSite): SiteJobs
-    {
+    // The listeners, in a process initialized for a blog.
+    $this->siteJobs = function (int $workerSite): SiteJobs {
         $context = new SiteContext(
             new SiteRepository(),
             $this->events,
@@ -194,22 +68,119 @@ final class SiteJobsTest extends TestCase
         $jobs->register($this->events);
 
         return $jobs;
-    }
+    };
 
-    /**
-     * A bus on the sync driver, in a process initialized for a blog.
-     */
-    private function syncBus(int $workerSite): Bus
-    {
-        $this->siteJobs($workerSite);
-
+    // A bus on the sync driver, in a process initialized for a blog.
+    $this->syncBus = function (int $workerSite): Bus {
+        ($this->siteJobs)($workerSite);
         $queue = new SyncQueue();
         $queue->setContainer($this->container);
         $queue->setConnectionName('sync');
-
         $bus = new Bus($this->container, static fn () => $queue);
         $this->container->instance(BusContract::class, $bus);
 
         return $bus;
+    };
+});
+
+afterEach(function (): void {
+    Queue::createPayloadUsing(null);
+    Container::setInstance(null);
+});
+
+it("routes a site-bound job to the dispatching site's queue", function (): void {
+    $queue = new RecordingQueue();
+    $bus = new Bus($this->container, static fn () => $queue);
+
+    switch_to_blog(2);
+    $bus->dispatch(new RebuildSiteIndex());
+    $bus->dispatch((new RebuildSiteIndex())->onQueue('default')->delay(30));
+    restore_current_blog();
+
+    expect($queue->pushed[0])->toMatchArray(['queue' => 'site-news', 'delay' => null])
+        ->and($queue->pushed[1])->toMatchArray(['queue' => 'site-news', 'delay' => 30])
+    ;
+});
+
+it('refuses to dispatch a site-bound job from a blog without a key', function (): void {
+    $bus = new Bus($this->container, static fn () => new RecordingQueue());
+
+    switch_to_blog(3);
+    try {
+        expect(fn () => $bus->dispatch(new RebuildSiteIndex()))->toThrow(InvalidSiteKey::class);
+    } finally {
+        restore_current_blog();
     }
-}
+});
+
+it("runs on its own site's worker", function (): void {
+    $bus = ($this->syncBus)(2);
+
+    switch_to_blog(2);
+    $bus->dispatch(new RebuildSiteIndex());
+    restore_current_blog();
+
+    expect(RebuildSiteIndex::$ranOn)->toBe([2]);
+});
+
+it("fails on another site's worker without running", function (): void {
+    $bus = ($this->syncBus)(1);
+
+    switch_to_blog(2);
+    try {
+        expect(fn () => $bus->dispatch(new RebuildSiteIndex()))
+            ->toThrow(
+                WrongSiteWorker::class,
+                'needs the bindings of site "news" but ran on a worker for site "main"',
+            )
+        ;
+    } finally {
+        restore_current_blog();
+    }
+
+    expect(RebuildSiteIndex::$ranOn)->toBe([]);
+});
+
+it("fails the job on another site's queue worker without throwing", function (): void {
+    $jobs = ($this->siteJobs)(1);
+    $job = queuedJob('news', RebuildSiteIndex::class);
+
+    $jobs->processing(new JobProcessing('redis', $job));
+
+    expect($job->hasFailed())->toBeTrue()
+        ->and($job->failedWith)->toBeInstanceOf(WrongSiteWorker::class)
+    ;
+});
+
+it('leaves other jobs alone', function (): void {
+    $jobs = ($this->siteJobs)(1);
+    $network = queuedJob('news', LeavesSwitched::class);
+    $own = queuedJob('main', RebuildSiteIndex::class);
+
+    $jobs->processing(new JobProcessing('redis', $network));
+    $jobs->processing(new JobProcessing('redis', $own));
+
+    expect($network->hasFailed())->toBeFalse()
+        ->and($own->hasFailed())->toBeFalse()
+    ;
+});
+
+it('unwinds switches a job leaves', function (): void {
+    ($this->syncBus)(1)->dispatch(new LeavesSwitched());
+
+    expect(get_current_blog_id())->toBe(1)
+        ->and(Site::switchDepth())->toBe(0)
+    ;
+});
+
+it('unwinds only to where the job started', function (): void {
+    $bus = ($this->syncBus)(1);
+
+    switch_to_blog(2);
+    $bus->dispatch(new LeavesSwitched());
+
+    expect(get_current_blog_id())->toBe(2)
+        ->and(Site::switchDepth())->toBe(1)
+    ;
+    restore_current_blog();
+});

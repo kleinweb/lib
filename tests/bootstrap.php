@@ -13,5 +13,6 @@ define('WP_CONTENT_DIR', KLEINWEB_EXAMPLE . '/wp-content');
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 require __DIR__ . '/Support/functions.php';
+require __DIR__ . '/Support/helpers.php';
 
 Kleinweb\Lib\Tests\Support\WordPress::reset();

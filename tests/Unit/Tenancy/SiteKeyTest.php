@@ -5,98 +5,63 @@
 
 declare(strict_types=1);
 
-namespace Kleinweb\Lib\Tests\Unit\Tenancy;
-
 use Kleinweb\Lib\Tenancy\Domain;
 use Kleinweb\Lib\Tenancy\Exceptions\InvalidSiteKey;
 use Kleinweb\Lib\Tenancy\SiteKey;
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
 
-use function str_repeat;
+it('takes the leftmost label of a host', function (string $host, ?string $expected): void {
+    expect(SiteKey::fromHost($host)?->value)->toBe($expected);
+})->with([
+    'domain' => ['newshub.edu', 'newshub'],
+    'subdomain' => ['news.temple.edu', 'news'],
+    'case' => ['NewsHub.EDU', 'newshub'],
+    'www is a label' => ['www.newshub.edu', 'www'],
+    'single label' => ['localhost', 'localhost'],
+    'leading digit' => ['9lives.org', '9lives'],
+    'leading hyphen' => ['-bad.org', null],
+    'empty' => ['', null],
+]);
 
-final class SiteKeyTest extends TestCase
-{
-    /**
-     * @return iterable<string, array{string, ?string}>
-     */
-    public static function hosts(): iterable
-    {
-        yield 'domain' => ['newshub.edu', 'newshub'];
-        yield 'subdomain' => ['news.temple.edu', 'news'];
-        yield 'case' => ['NewsHub.EDU', 'newshub'];
-        yield 'www is a label' => ['www.newshub.edu', 'www'];
-        yield 'single label' => ['localhost', 'localhost'];
-        yield 'leading digit' => ['9lives.org', '9lives'];
-        yield 'leading hyphen' => ['-bad.org', null];
-        yield 'empty' => ['', null];
-    }
+it('takes the first segment of a path', function (string $path, ?string $expected): void {
+    expect(SiteKey::fromPath($path)?->value)->toBe($expected);
+})->with([
+    'slashes' => ['/newshub/', 'newshub'],
+    'root' => ['/', null],
+    'bare' => ['news-hub', 'news-hub'],
+    'nested' => ['/a/b/', 'a'],
+]);
 
-    #[DataProvider('hosts')]
-    public function testFromHostTakesTheLeftmostLabel(string $host, ?string $expected): void
-    {
-        self::assertSame($expected, SiteKey::fromHost($host)?->value);
-    }
+it('is a single lowercase DNS label', function (string $value, bool $valid): void {
+    expect(SiteKey::isValid($value))->toBe($valid);
+})->with([
+    'hyphenated' => ['news-hub', true],
+    'one letter' => ['a', true],
+    'leading hyphen' => ['-x', false],
+    'trailing hyphen' => ['x-', false],
+    'upper case' => ['Abc', false],
+    '63 characters' => [str_repeat('a', 63), true],
+    '64 characters' => [str_repeat('a', 64), false],
+]);
 
-    /**
-     * @return iterable<string, array{string, ?string}>
-     */
-    public static function paths(): iterable
-    {
-        yield 'slashes' => ['/newshub/', 'newshub'];
-        yield 'root' => ['/', null];
-        yield 'bare' => ['news-hub', 'news-hub'];
-        yield 'nested' => ['/a/b/', 'a'];
-    }
+it('reserves www', function (): void {
+    expect(SiteKey::from('www')->isReserved())->toBeTrue()
+        ->and(SiteKey::from('news')->isReserved())->toBeFalse()
+    ;
+});
 
-    #[DataProvider('paths')]
-    public function testFromPathTakesTheFirstSegment(string $path, ?string $expected): void
-    {
-        self::assertSame($expected, SiteKey::fromPath($path)?->value);
-    }
+it('studly-cases keys for namespaces', function (): void {
+    expect(SiteKey::from('news-hub')->studly())->toBe('NewsHub')
+        ->and(SiteKey::from('9lives')->isNamespaceable())->toBeFalse()
+    ;
+});
 
-    /**
-     * @return iterable<string, array{string, bool}>
-     */
-    public static function values(): iterable
-    {
-        yield 'hyphenated' => ['news-hub', true];
-        yield 'one letter' => ['a', true];
-        yield 'leading hyphen' => ['-x', false];
-        yield 'trailing hyphen' => ['x-', false];
-        yield 'upper case' => ['Abc', false];
-        yield '63 characters' => [str_repeat('a', 63), true];
-        yield '64 characters' => [str_repeat('a', 64), false];
-    }
+it('refuses to studly-case a key with a leading digit', function (): void {
+    SiteKey::from('9x')->studly();
+})->throws(InvalidSiteKey::class);
 
-    #[DataProvider('values')]
-    public function testIsAOneLabelDnsName(string $value, bool $valid): void
-    {
-        self::assertSame($valid, SiteKey::isValid($value));
-    }
-
-    public function testWwwIsReserved(): void
-    {
-        self::assertTrue(SiteKey::from('www')->isReserved());
-        self::assertFalse(SiteKey::from('news')->isReserved());
-    }
-
-    public function testStudlyCaseForNamespaces(): void
-    {
-        self::assertSame('NewsHub', SiteKey::from('news-hub')->studly());
-        self::assertFalse(SiteKey::from('9lives')->isNamespaceable());
-    }
-
-    public function testStudlyRefusesALeadingDigit(): void
-    {
-        $this->expectException(InvalidSiteKey::class);
-        SiteKey::from('9x')->studly();
-    }
-
-    public function testDomainNormalizes(): void
-    {
-        self::assertSame('example.com/newshub', (string) new Domain('Example.COM', 'newshub'));
-        self::assertSame('example.com', (string) new Domain('example.com', '/'));
-        self::assertSame('/a/', (new Domain('e.com', '//a//'))->path);
-    }
-}
+it('normalizes domains', function (): void {
+    expect((string) new Domain('Example.COM', 'newshub'))->toBe('example.com/newshub')
+        ->and((string) new Domain('example.com', '/'))->toBe('example.com')
+        ->and((new Domain('e.com', '//a//'))->path)->toBe('/a/')
+    ;
+});

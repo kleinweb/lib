@@ -3,149 +3,125 @@
 // SPDX-FileCopyrightText: (C) 2026 Temple University <kleinweb@temple.edu>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-declare(strict_types=1);
-
-namespace Kleinweb\Lib\Tests\Unit\ContentTypes;
-
-use Illuminate\Config\Repository;
-use Kleinweb\Lib\ContentTypes\ContentTypeRegistrar;
-use Kleinweb\Lib\Tenancy\Config\ConfigOverlay;
-use Kleinweb\Lib\Tests\Support\TestCase;
-use Kleinweb\Lib\Tests\Support\WordPress;
-use Closure;
-
-use function post_type_exists;
-use function register_taxonomy;
-use function register_taxonomy_for_object_type;
-
-/**
+/*
  * Switching registrations between the example's sites: main (the shared
  * config), news and events (their site plugins' overlays).  The fake
  * WordPress follows Core: unregistering a post type unlinks its taxonomies.
  */
-final class ContentTypeRegistrarTest extends TestCase
+
+declare(strict_types=1);
+
+use Illuminate\Config\Repository;
+use Kleinweb\Lib\ContentTypes\ContentTypeRegistrar;
+use Kleinweb\Lib\Tenancy\Config\ConfigOverlay;
+use Kleinweb\Lib\Tests\Support\WordPress;
+
+use function Kleinweb\Lib\Tests\exampleConfig;
+use function Kleinweb\Lib\Tests\sitePluginConfig;
+
+function profileArgs(): mixed
 {
-    private ConfigOverlay $overlay;
+    return WordPress::$postTypes['profile']['args'] ?? null;
+}
 
-    /** @var array<string, mixed> the applied site's leaves */
-    private array $current = [];
+beforeEach(function (): void {
+    $config = new Repository(['post-types' => exampleConfig('post-types')]);
+    $overlay = new ConfigOverlay($config);
+    $this->registrar = new ContentTypeRegistrar($config);
+    $this->registrar->registerAll();
 
-    private ContentTypeRegistrar $registrar;
+    // Another plugin links its own taxonomy to a type from config.
+    register_taxonomy('audience', ['post']);
+    register_taxonomy_for_object_type('audience', 'profile');
 
-    /** @var array{0: array<string, mixed>, 1: array<string, mixed>} */
-    private array $main;
+    $this->main = WordPress::contentTypes();
 
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $config = new Repository(['post-types' => self::exampleConfig('post-types')]);
-        $this->overlay = new ConfigOverlay($config);
-        $this->overlay->apply([]);
-        $this->registrar = new ContentTypeRegistrar($config);
-        $this->registrar->registerAll();
-
-        // Another plugin links its own taxonomy to a type from config.
-        register_taxonomy('audience', ['post']);
-        register_taxonomy_for_object_type('audience', 'profile');
-
-        $this->main = WordPress::contentTypes();
-    }
-
-    public function testRegistersTheSharedTypesWithExtendedCptsArguments(): void
-    {
-        self::assertTrue(post_type_exists('profile'));
-        self::assertSame(['post', 'profile'], WordPress::linkedTypes('topic'));
-        $args = WordPress::$postTypes['profile']['args'];
-        self::assertSame('Profiles', $args['labels']['name'] ?? null);
-        self::assertSame('people', $args['rewrite']['slug'] ?? null);
-    }
-
-    public function testEnteringASiteAddsAndReplacesTypes(): void
-    {
-        $this->visit('news', function (): void {
-            self::assertTrue(post_type_exists('story'));
-            self::assertSame(['story'], WordPress::linkedTypes('desk'));
-            self::assertSame('dashicons-businessperson', self::profileIcon());
-            self::assertSame(['post', 'profile', 'story'], WordPress::linkedTypes('topic'));
-            // Replacing profile kept the other plugin's link to it.
-            self::assertSame(['post', 'profile'], WordPress::linkedTypes('audience'));
-        });
-
-        self::assertSame($this->main, WordPress::contentTypes());
-    }
-
-    public function testEnteringASiteRemovesTypesItDoesNotHave(): void
-    {
-        $this->visit('events', function (): void {
-            self::assertFalse(post_type_exists('profile'));
-            self::assertTrue(post_type_exists('event'));
-            self::assertSame(['event', 'post'], WordPress::linkedTypes('topic'));
-            self::assertSame(['post'], WordPress::linkedTypes('audience'));
-        });
-
-        self::assertSame($this->main, WordPress::contentTypes(), 'links restored with the type');
-    }
-
-    public function testNestedVisitsUnwind(): void
-    {
-        $this->visit('news', function (): void {
-            $this->visit('events', static function (): void {
-                self::assertFalse(post_type_exists('story'));
-                self::assertTrue(post_type_exists('event'));
-            });
-
-            self::assertTrue(post_type_exists('story'));
-            self::assertSame(['story'], WordPress::linkedTypes('desk'));
-            self::assertSame('dashicons-businessperson', self::profileIcon());
-        });
-
-        self::assertSame($this->main, WordPress::contentTypes());
-    }
-
-    public function testEnteringTheSameDefinitionsChangesNothing(): void
-    {
-        $changes = $this->registrar->enter();
-
-        self::assertSame([], $changes->addedPostTypes);
-        self::assertSame([], $changes->replacedPostTypes);
-        self::assertSame([], $changes->removedPostTypes);
-        self::assertSame([], $changes->removedTaxonomies);
-
-        $this->registrar->leave($changes);
-        self::assertSame($this->main, WordPress::contentTypes());
-    }
-
-    /**
-     * As `runFor()` does after `switch_to_blog()`, with the overlays swapped
-     * the way ConfigBootstrapper swaps them: the outer site's reverted, the
+    /*
+     * As runFor() does after switch_to_blog(), with overlays swapped the
+     * way ConfigBootstrapper swaps them: the outer site's reverted, the
      * visited site's applied, and back again afterwards.
      */
-    private function visit(string $key, Closure $callback): void
-    {
-        $overlay = require self::example(
-            "wp-content/plugins/kleinweb-site-{$key}/config/post-types.php",
-        );
-        self::assertIsArray($overlay);
-
+    $this->current = [];
+    $this->visit = function (string $key, Closure $callback) use ($overlay): void {
         $outer = $this->current;
-        $this->overlay->revert();
-        $this->current = ConfigOverlay::leaves(['post-types' => $overlay]);
-        $this->overlay->apply($this->current);
+        $overlay->revert();
+        $this->current = ConfigOverlay::leaves([
+            'post-types' => sitePluginConfig($key, 'post-types'),
+        ]);
+        $overlay->apply($this->current);
         $changes = $this->registrar->enter();
 
         try {
             $callback();
         } finally {
             $this->registrar->leave($changes);
-            $this->overlay->revert();
+            $overlay->revert();
             $this->current = $outer;
-            $this->overlay->apply($outer);
+            $overlay->apply($outer);
         }
-    }
+    };
+});
 
-    private static function profileIcon(): mixed
-    {
-        return WordPress::$postTypes['profile']['args']['menu_icon'] ?? null;
-    }
-}
+it('registers the shared types with Extended CPTs arguments', function (): void {
+    expect(post_type_exists('profile'))->toBeTrue()
+        ->and(WordPress::linkedTypes('topic'))->toBe(['post', 'profile'])
+        ->and(profileArgs()['labels']['name'] ?? null)->toBe('Profiles')
+        ->and(profileArgs()['rewrite']['slug'] ?? null)->toBe('people')
+    ;
+});
+
+it('adds and replaces types for the site it enters, then restores them', function (): void {
+    ($this->visit)('news', function (): void {
+        expect(post_type_exists('story'))->toBeTrue()
+            ->and(WordPress::linkedTypes('desk'))->toBe(['story'])
+            ->and(profileArgs()['menu_icon'] ?? null)->toBe('dashicons-businessperson')
+            ->and(WordPress::linkedTypes('topic'))->toBe(['post', 'profile', 'story'])
+            // The other plugin's link survives.
+            ->and(WordPress::linkedTypes('audience'))->toBe(['post', 'profile'])
+        ;
+    });
+
+    expect(WordPress::contentTypes())->toBe($this->main);
+});
+
+it('removes types the site does not have, then restores them with their links', function (): void {
+    ($this->visit)('events', function (): void {
+        expect(post_type_exists('profile'))->toBeFalse()
+            ->and(post_type_exists('event'))->toBeTrue()
+            ->and(WordPress::linkedTypes('topic'))->toBe(['event', 'post'])
+            ->and(WordPress::linkedTypes('audience'))->toBe(['post'])
+        ;
+    });
+
+    expect(WordPress::contentTypes())->toBe($this->main);
+});
+
+it('unwinds nested visits', function (): void {
+    ($this->visit)('news', function (): void {
+        ($this->visit)('events', static function (): void {
+            expect(post_type_exists('story'))->toBeFalse()
+                ->and(post_type_exists('event'))->toBeTrue()
+            ;
+        });
+
+        expect(post_type_exists('story'))->toBeTrue()
+            ->and(WordPress::linkedTypes('desk'))->toBe(['story'])
+            ->and(profileArgs()['menu_icon'] ?? null)->toBe('dashicons-businessperson')
+        ;
+    });
+
+    expect(WordPress::contentTypes())->toBe($this->main);
+});
+
+it('changes nothing when the definitions are the same', function (): void {
+    $changes = $this->registrar->enter();
+
+    expect($changes->addedPostTypes)->toBe([])
+        ->and($changes->replacedPostTypes)->toBe([])
+        ->and($changes->removedPostTypes)->toBe([])
+        ->and($changes->removedTaxonomies)->toBe([])
+    ;
+
+    $this->registrar->leave($changes);
+    expect(WordPress::contentTypes())->toBe($this->main);
+});

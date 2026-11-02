@@ -19,25 +19,4 @@ abstract class TestCase extends BaseTestCase
         parent::setUp();
         WordPress::reset();
     }
-
-    /**
-     * The example project's files, which double as fixtures.
-     */
-    protected static function example(string $path = ''): string
-    {
-        return \constant('KLEINWEB_EXAMPLE') . ($path !== '' ? "/{$path}" : '');
-    }
-
-    /**
-     * The example application's shared config file.
-     *
-     * @return array<array-key, mixed>
-     */
-    protected static function exampleConfig(string $name): array
-    {
-        $config = require self::example("wp-content/mu-plugins/example/config/{$name}.php");
-        self::assertIsArray($config);
-
-        return $config;
-    }
 }

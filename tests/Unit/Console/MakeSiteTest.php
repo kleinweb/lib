@@ -3,106 +3,100 @@
 // SPDX-FileCopyrightText: (C) 2026 Temple University <kleinweb@temple.edu>
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-declare(strict_types=1);
-
-namespace Kleinweb\Lib\Tests\Unit\Console;
-
-use Illuminate\Console\Application as Artisan;
-use Illuminate\Console\Command;
-use Illuminate\Events\Dispatcher;
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\Foundation\Application;
-use Kleinweb\Lib\Console\Commands\Tenancy\AssignSiteKeys;
-use Kleinweb\Lib\Console\Commands\Tenancy\MakeSite;
-use Kleinweb\Lib\Tenancy\SiteRepository;
-use Kleinweb\Lib\Tests\Support\TestCase;
-use Kleinweb\Lib\Tests\Support\WordPress;
-use Symfony\Component\Console\Input\ArrayInput;
-use Symfony\Component\Console\Output\BufferedOutput;
-
-use function sys_get_temp_dir;
-
-/**
+/*
  * `make:site` for a key whose site plugin the example already has, so
  * nothing is written to the example: its files exist and are skipped, and
  * refused `--url`s stop before writing.
  */
-final class MakeSiteTest extends TestCase
+
+declare(strict_types=1);
+
+use Illuminate\Console\Application as Artisan;
+use Illuminate\Console\Command;
+use Illuminate\Events\Dispatcher;
+use Kleinweb\Lib\Console\Commands\Tenancy\AssignSiteKeys;
+use Kleinweb\Lib\Console\Commands\Tenancy\MakeSite;
+use Kleinweb\Lib\Tests\Support\WordPress;
+use Symfony\Component\Console\Input\ArrayInput;
+use Symfony\Component\Console\Output\BufferedOutput;
+
+use function Kleinweb\Lib\Tests\testApplication;
+
+/**
+ * Through Artisan, since `--url` calls site:assign-keys.
+ *
+ * @param array<string, mixed> $input
+ *
+ * @return array{int, string}
+ */
+function makeSite(array $input): array
 {
-    protected function setUp(): void
-    {
-        parent::setUp();
+    $app = testApplication();
+    $artisan = new Artisan($app, new Dispatcher($app), 'test');
+    $artisan->setAutoExit(false);
+    $artisan->resolveCommands([MakeSite::class, AssignSiteKeys::class]);
 
-        WordPress::addSite(1, 'main', domain: 'example.test');
-        WordPress::addSite(2, domain: 'news.example.test');
-    }
+    $output = new BufferedOutput();
+    $code = $artisan->find('make:site')->run(new ArrayInput($input), $output);
 
-    public function testLeavesExistingFilesAlone(): void
-    {
-        [$code, $output] = $this->make(['key' => 'news']);
-
-        self::assertSame(Command::SUCCESS, $code);
-        self::assertStringContainsString('already exists', $output);
-        self::assertStringContainsString('No site has the key "news" yet', $output);
-    }
-
-    public function testGivesTheKeyToTheSiteAtAUrl(): void
-    {
-        [$code] = $this->make(['key' => 'news', '--url' => 'https://news.example.test/']);
-
-        self::assertSame(Command::SUCCESS, $code);
-        self::assertSame('news', WordPress::$meta[2]['site_key'] ?? null);
-    }
-
-    public function testRefusesAUrlNoSiteHas(): void
-    {
-        [$code, $output] = $this->make(['key' => 'news', '--url' => 'elsewhere.test']);
-
-        self::assertSame(Command::FAILURE, $code);
-        self::assertStringContainsString('No site has the URL', $output);
-        self::assertStringNotContainsString('Skipped', $output, 'checked before writing');
-    }
-
-    public function testRefusesAKeyAnotherSiteHasBeforeWritingAnything(): void
-    {
-        WordPress::$meta[1]['site_key'] = 'news';
-
-        [$code, $output] = $this->make(['key' => 'news', '--url' => 'news.example.test']);
-
-        self::assertSame(Command::FAILURE, $code);
-        self::assertStringContainsString('already used by site 1', $output);
-        self::assertStringNotContainsString('Skipped', $output);
-        self::assertArrayNotHasKey('site_key', WordPress::$meta[2]);
-    }
-
-    public function testRefusesToReplaceASitesKey(): void
-    {
-        [$code, $output] = $this->make(['key' => 'news', '--url' => 'example.test']);
-
-        self::assertSame(Command::FAILURE, $code);
-        self::assertStringContainsString('already has the key "main"', $output);
-        self::assertSame('main', WordPress::$meta[1]['site_key']);
-    }
-
-    /**
-     * @param array<string, mixed> $input
-     *
-     * @return array{int, string}
-     */
-    private function make(array $input): array
-    {
-        $app = new Application(sys_get_temp_dir());
-        $app->instance(SiteRepository::class, new SiteRepository());
-
-        // `--url` calls site:assign-keys, so both need an Artisan application.
-        $artisan = new Artisan($app, new Dispatcher($app), 'test');
-        $artisan->setAutoExit(false);
-        $artisan->resolveCommands([MakeSite::class, AssignSiteKeys::class]);
-        $artisan->getLaravel()->instance('files', new Filesystem());
-
-        $output = new BufferedOutput();
-        $code = $artisan->find('make:site')->run(new ArrayInput($input), $output);
-
-        return [$code, $output->fetch()];
-    }
+    return [$code, $output->fetch()];
 }
+
+beforeEach(function (): void {
+    WordPress::addSite(1, 'main', domain: 'example.test');
+    WordPress::addSite(2, domain: 'news.example.test');
+});
+
+it('leaves existing files alone', function (): void {
+    [$code, $output] = makeSite(['key' => 'news']);
+
+    expect($code)->toBe(Command::SUCCESS)
+        ->and($output)->toContain('already exists', 'No site has the key "news" yet')
+    ;
+});
+
+it('gives the key to the site at a URL', function (): void {
+    [$code] = makeSite(['key' => 'news', '--url' => 'https://news.example.test/']);
+
+    expect($code)->toBe(Command::SUCCESS)
+        ->and(WordPress::$meta[2]['site_key'] ?? null)->toBe('news')
+    ;
+});
+
+it('refuses before writing anything', function (
+    Closure $arrange,
+    string $url,
+    string $expected,
+): void {
+    $arrange();
+    [$code, $output] = makeSite(['key' => 'news', '--url' => $url]);
+
+    expect($code)->toBe(Command::FAILURE)
+        ->and($output)->toContain($expected)
+        ->not->toContain('Skipped')
+    ;
+})->with([
+    'a URL no site has' => [static function (): void {}, 'elsewhere.test', 'No site has the URL'],
+    'a key another site has' => [
+        static function (): void {
+            WordPress::$meta[1]['site_key'] = 'news';
+        },
+        'news.example.test',
+        'already used by site 1',
+    ],
+    "replacing a site's key" => [
+        static function (): void {},
+        'example.test',
+        'already has the key "main"',
+    ],
+]);
+
+it('keeps the keys it refused to change', function (): void {
+    makeSite(['key' => 'news', '--url' => 'example.test']);
+    WordPress::$meta[1]['site_key'] = 'news';
+    makeSite(['key' => 'news', '--url' => 'news.example.test']);
+
+    expect(WordPress::$meta[1]['site_key'])->toBe('news')
+        ->and(WordPress::$meta[2])->not->toHaveKey('site_key')
+    ;
+});

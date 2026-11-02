@@ -5,90 +5,61 @@
 
 declare(strict_types=1);
 
-namespace Kleinweb\Lib\Tests\Unit\Tenancy\Discovery;
-
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Application;
 use Kleinweb\Lib\Tenancy\Discovery\SiteManifest;
 use Kleinweb\Lib\Tenancy\SiteKey;
 use Kleinweb\Lib\Tenancy\SitePlugin;
 use Kleinweb\Lib\Tenancy\SiteRepository;
-use Kleinweb\Lib\Tests\Support\TestCase;
 use Kleinweb\Lib\Tests\Support\WordPress;
 use Kleinweb\Sites\News\Providers\NewsServiceProvider;
 
-use function array_keys;
-use function sys_get_temp_dir;
-use function uniqid;
+use function Kleinweb\Lib\Tests\tempPath;
 
-final class SiteManifestTest extends TestCase
-{
-    private string $base;
+beforeEach(function (): void {
+    WordPress::addSite(1, 'main');
+    WordPress::addSite(2, 'news');
+    WordPress::addSite(5, 'events');
 
-    private Filesystem $files;
+    $this->base = tempPath('manifest');
+    $this->manifest = fn (): SiteManifest => new SiteManifest(
+        new Application($this->base),
+        new Filesystem(),
+    );
+    $this->newsPlugin = SitePlugin::path(SiteKey::from('news'));
+});
 
-    protected function setUp(): void
-    {
-        parent::setUp();
+afterEach(function (): void {
+    (new Filesystem())->deleteDirectory($this->base);
+});
 
-        WordPress::addSite(1, 'main');
-        WordPress::addSite(2, 'news');
-        WordPress::addSite(5, 'events');
+it('reads providers from composer.json', function (): void {
+    expect(($this->manifest)()->providers($this->newsPlugin))->toBe([NewsServiceProvider::class])
+        ->and(($this->manifest)()->providers(SitePlugin::path(SiteKey::from('events'))))->toBe([])
+    ;
+});
 
-        $this->base = sys_get_temp_dir() . '/' . uniqid('kleinweb-manifest-', true);
-        $this->files = new Filesystem();
-    }
+it("reads a site plugin's config by file name", function (): void {
+    expect(array_keys(($this->manifest)()->config(SiteKey::from('events'))))
+        ->toBe(['post-types', 'services'])
+        ->and(($this->manifest)()->config(SiteKey::from('main')))->toBe([])
+    ;
+});
 
-    protected function tearDown(): void
-    {
-        $this->files->deleteDirectory($this->base);
-    }
+it('caches and clears what it reads', function (): void {
+    $manifest = ($this->manifest)();
+    $path = $manifest->write(new SiteRepository());
 
-    public function testReadsProvidersFromComposerJson(): void
-    {
-        $manifest = $this->manifest();
+    $written = require $path;
+    expect($path)->toBeFile()
+        ->and($written['config'])->toHaveKey('news')
+        ->and($written['packages'])->toHaveKey($this->newsPlugin)
+    ;
 
-        self::assertSame(
-            [NewsServiceProvider::class],
-            $manifest->providers(SitePlugin::path(SiteKey::from('news'))),
-        );
-        self::assertSame([], $manifest->providers(SitePlugin::path(SiteKey::from('events'))));
-    }
-
-    public function testReadsASitePluginsConfigByFileName(): void
-    {
-        $config = $this->manifest()->config(SiteKey::from('events'));
-
-        self::assertSame(['post-types', 'services'], array_keys($config));
-        self::assertSame([], $this->manifest()->config(SiteKey::from('main')));
-    }
-
-    public function testTheCacheRoundTrips(): void
-    {
-        $manifest = $this->manifest();
-        $path = $manifest->write(new SiteRepository());
-        self::assertFileExists($path);
-        $written = require $path;
-        self::assertIsArray($written);
-        self::assertArrayHasKey('news', $written['config']);
-        self::assertArrayHasKey(SitePlugin::path(SiteKey::from('news')), $written['packages']);
-
-        $cached = $this->manifest();
-        self::assertSame(
-            $manifest->config(SiteKey::from('news')),
-            $cached->config(SiteKey::from('news')),
-        );
-        self::assertSame(
-            [NewsServiceProvider::class],
-            $cached->providers(SitePlugin::path(SiteKey::from('news'))),
-        );
-
-        self::assertTrue($cached->clear());
-        self::assertFileDoesNotExist($path);
-    }
-
-    private function manifest(): SiteManifest
-    {
-        return new SiteManifest(new Application($this->base), $this->files);
-    }
-}
+    $cached = ($this->manifest)();
+    expect($cached->config(SiteKey::from('news')))->toBe($manifest->config(SiteKey::from('news')))
+        ->and($cached->providers($this->newsPlugin))->toBe([NewsServiceProvider::class])
+        ->and($cached->clear())->toBeTrue()
+        ->and($path)->not->toBeFile()
+    ;
+});

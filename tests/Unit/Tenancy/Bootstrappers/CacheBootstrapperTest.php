@@ -5,8 +5,6 @@
 
 declare(strict_types=1);
 
-namespace Kleinweb\Lib\Tests\Unit\Tenancy\Bootstrappers;
-
 use Illuminate\Cache\CacheManager;
 use Illuminate\Cache\Repository as CacheRepository;
 use Illuminate\Config\Repository as Config;
@@ -15,119 +13,102 @@ use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Application;
 use Kleinweb\Lib\Tenancy\Bootstrappers\CacheBootstrapper;
 use Kleinweb\Lib\Tests\Support\PrefixedStore;
-use PHPUnit\Framework\TestCase;
 
-use function sys_get_temp_dir;
-use function uniqid;
+use function Kleinweb\Lib\Tests\tempPath;
 
-final class CacheBootstrapperTest extends TestCase
+/**
+ * A store that keeps a prefix, standing in for Redis or Memcached.
+ *
+ * @param array<string, mixed> $config
+ */
+function prefixedStore(Container $app, array $config): CacheRepository
 {
-    private string $dir;
+    $store = new PrefixedStore();
+    $prefix = $config['prefix'] ?? $app->make('config')->get('cache.prefix');
+    $store->setPrefix(is_string($prefix) ? $prefix : '');
 
-    private Config $config;
+    return new CacheRepository($store, $config);
+}
 
-    private CacheManager $cache;
+beforeEach(function (): void {
+    $this->dir = tempPath('cache');
 
-    private CacheBootstrapper $bootstrapper;
+    $app = new Application(sys_get_temp_dir());
+    $this->config = new Config(['cache' => [
+        'default' => 'file',
+        'prefix' => 'app-cache-blog_1_',
+        'stores' => [
+            'file' => ['driver' => 'file', 'path' => "{$this->dir}/data"],
+            'array' => ['driver' => 'array', 'serialize' => false],
+            'shared' => ['driver' => 'prefixed'],
+            'own' => ['driver' => 'prefixed', 'prefix' => 'own-'],
+        ],
+    ]]);
+    $app->instance('config', $this->config);
+    $app->instance('files', new Filesystem());
+    $this->cache = new CacheManager($app);
+    $app->instance('cache', $this->cache);
 
-    protected function setUp(): void
-    {
-        $this->dir = sys_get_temp_dir() . '/' . uniqid('kleinweb-cache-', true);
+    $this->cache->extend('prefixed', prefixedStore(...));
 
-        $app = new Application(sys_get_temp_dir());
-        $this->config = new Config(['cache' => [
-            'default' => 'file',
-            'prefix' => 'app-cache-blog_1_',
-            'stores' => [
-                'file' => ['driver' => 'file', 'path' => "{$this->dir}/data"],
-                'array' => ['driver' => 'array', 'serialize' => false],
-                'shared' => ['driver' => 'prefixed'],
-                'own' => ['driver' => 'prefixed', 'prefix' => 'own-'],
-            ],
-        ]]);
-        $app->instance('config', $this->config);
-        $app->instance('files', new Filesystem());
-        $this->cache = new CacheManager($app);
-        $app->instance('cache', $this->cache);
+    $this->bootstrapper = new CacheBootstrapper($app, $this->config);
+    $this->bootstrapper->apply(1);
 
-        $this->cache->extend('prefixed', self::prefixedStore(...));
-
-        $this->bootstrapper = new CacheBootstrapper($app, $this->config);
-        $this->bootstrapper->apply(1);
-    }
-
-    protected function tearDown(): void
-    {
-        (new Filesystem())->deleteDirectory($this->dir);
-    }
-
-    public function testFileAndArrayStoresAreIsolatedPerBlog(): void
-    {
-        $this->cache->store('file')->put('k', 'blog 1', 60);
-        $this->cache->store('array')->put('k', 'blog 1', 60);
-        self::assertSame("{$this->dir}/data/blog_1", $this->config->get('cache.stores.file.path'));
-
-        $this->switchTo(2);
-        self::assertNull($this->cache->store('file')->get('k'));
-        self::assertNull($this->cache->store('array')->get('k'));
-        $this->cache->store('file')->put('k', 'blog 2', 60);
-
-        $this->switchTo(1);
-        self::assertSame('blog 1', $this->cache->store('file')->get('k'));
-        self::assertSame('blog 1', $this->cache->store('array')->get('k'));
-    }
-
-    public function testRepositoriesResolvedEarlierFollowTheSwitch(): void
-    {
-        $injected = $this->cache->store('array');
-        $injected->put('k', 'blog 1', 60);
-
-        $this->switchTo(2);
-        self::assertNull($injected->get('k'));
-
-        $this->switchTo(1);
-        self::assertSame('blog 1', $injected->get('k'));
-    }
-
-    public function testPrefixedStoresFollowTheSwitch(): void
-    {
-        $this->switchTo(2);
-        self::assertSame('app-cache-blog_2_', $this->prefix('shared'));
-        self::assertSame('own-blog_2_', $this->prefix('own'));
-
-        $this->switchTo(1);
-        $this->bootstrapper->apply(1);
-        self::assertSame('app-cache-blog_1_', $this->prefix('shared'));
-        self::assertSame('own-blog_1_', $this->prefix('own'));
-    }
-
-    /**
-     * As on `switch_blog`: Acorn sets `cache.prefix` first, then the
-     * bootstrapper runs.
-     */
-    private function switchTo(int $blogId): void
-    {
+    // As on switch_blog: Acorn sets `cache.prefix` first, then the
+    // bootstrapper runs.
+    $this->switchTo = function (int $blogId): void {
         $this->config->set('cache.prefix', "app-cache-blog_{$blogId}_");
         $this->bootstrapper->apply($blogId);
-    }
+    };
 
-    private function prefix(string $store): string
-    {
-        $store = $this->cache->store($store)->getStore();
-        self::assertInstanceOf(PrefixedStore::class, $store);
+    $this->prefix = fn (string $store): string => $this->cache
+        ->store($store)
+        ->getStore()
+        ->getPrefix()
+    ;
+});
 
-        return $store->getPrefix();
-    }
+afterEach(function (): void {
+    (new Filesystem())->deleteDirectory($this->dir);
+});
 
-    /**
-     * @param array<string, mixed> $config
-     */
-    private static function prefixedStore(Container $app, array $config): CacheRepository
-    {
-        $store = new PrefixedStore();
-        $prefix = $config['prefix'] ?? $app->make('config')->get('cache.prefix');
-        $store->setPrefix(\is_string($prefix) ? $prefix : '');
+it('isolates file and array stores per blog', function (): void {
+    $this->cache->store('file')->put('k', 'blog 1', 60);
+    $this->cache->store('array')->put('k', 'blog 1', 60);
+    expect($this->config->get('cache.stores.file.path'))->toBe("{$this->dir}/data/blog_1");
 
-        return new CacheRepository($store, $config);
-    }
-}
+    ($this->switchTo)(2);
+    expect($this->cache->store('file')->get('k'))->toBeNull()
+        ->and($this->cache->store('array')->get('k'))->toBeNull()
+    ;
+    $this->cache->store('file')->put('k', 'blog 2', 60);
+
+    ($this->switchTo)(1);
+    expect($this->cache->store('file')->get('k'))->toBe('blog 1')
+        ->and($this->cache->store('array')->get('k'))->toBe('blog 1')
+    ;
+});
+
+it('moves repositories resolved earlier along with the switch', function (): void {
+    $injected = $this->cache->store('array');
+    $injected->put('k', 'blog 1', 60);
+
+    ($this->switchTo)(2);
+    expect($injected->get('k'))->toBeNull();
+
+    ($this->switchTo)(1);
+    expect($injected->get('k'))->toBe('blog 1');
+});
+
+it('re-prefixes prefixed stores on every switch, without piling up', function (): void {
+    ($this->switchTo)(2);
+    expect(($this->prefix)('shared'))->toBe('app-cache-blog_2_')
+        ->and(($this->prefix)('own'))->toBe('own-blog_2_')
+    ;
+
+    ($this->switchTo)(1);
+    $this->bootstrapper->apply(1);
+    expect(($this->prefix)('shared'))->toBe('app-cache-blog_1_')
+        ->and(($this->prefix)('own'))->toBe('own-blog_1_')
+    ;
+});
