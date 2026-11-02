@@ -43,6 +43,25 @@ final class WordPress
     /** @var array<string, true> */
     public static array $themeSupports = [];
 
+    public static bool $multisite = true;
+
+    /**
+     * Posts per blog: blog ID => post ID => fields.
+     *
+     * @var array<int, array<int, array{post_type: string, post_status: string, file?: string}>>
+     */
+    public static array $posts = [];
+
+    /** Whether deleting an attachment trashes it (MEDIA_TRASH). */
+    public static bool $mediaTrash = false;
+
+    /** @var list<array{blog: int, after: int, limit: int}> every WP_Query batch run */
+    public static array $queries = [];
+
+    public static bool $termCountingDeferred = false;
+
+    public static int $cacheFlushes = 0;
+
     public static string $template = '';
 
     public static string $stylesheet = '';
@@ -70,6 +89,14 @@ final class WordPress
         ];
         self::$taxonomies = [];
         self::$themeSupports = [];
+        self::$multisite = true;
+        self::$posts = [];
+        self::$mediaTrash = false;
+        self::$queries = [];
+        self::$termCountingDeferred = false;
+        self::$cacheFlushes = 0;
+        // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited -- The fake WordPress.
+        $GLOBALS['wpdb'] = new FakeWpdb();
         self::$template = \constant('WP_CONTENT_DIR') . '/themes/kleinweb-base';
         self::$stylesheet = self::$template;
     }

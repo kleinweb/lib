@@ -46,6 +46,20 @@ function add_action(string $hook, callable $callback, int $priority = 10, int $a
     return add_filter($hook, $callback, $priority, $args);
 }
 
+function remove_filter(string $hook, callable $callback, int $priority = 10): bool
+{
+    $callbacks = WordPress::$hooks[$hook][$priority] ?? [];
+    $kept = array_values(array_filter($callbacks, static fn ($c) => $c !== $callback));
+    WordPress::$hooks[$hook][$priority] = $kept;
+
+    return count($kept) !== count($callbacks);
+}
+
+function remove_action(string $hook, callable $callback, int $priority = 10): bool
+{
+    return remove_filter($hook, $callback, $priority);
+}
+
 function has_filter(string $hook, mixed $callback = false): bool|int
 {
     foreach (WordPress::$hooks[$hook] ?? [] as $priority => $callbacks) {
@@ -88,7 +102,7 @@ function did_action(string $hook): int
 
 function is_multisite(): bool
 {
-    return true;
+    return WordPress::$multisite;
 }
 
 function get_current_blog_id(): int
@@ -225,7 +239,14 @@ function get_option(string $name, mixed $default = false): mixed
     return apply_filters("option_{$name}", $value, $name);
 }
 
-function update_option(string $name, mixed $value): bool
+function delete_option(string $name): bool
+{
+    unset(WordPress::$options[WordPress::$blogId][$name]);
+
+    return true;
+}
+
+function update_option(string $name, mixed $value, mixed $autoload = null): bool
 {
     $old = WordPress::$options[WordPress::$blogId][$name] ?? false;
     WordPress::$options[WordPress::$blogId][$name] = apply_filters("pre_update_option_{$name}", $value, $old, $name);
@@ -283,6 +304,127 @@ function add_theme_support(string $feature, mixed ...$args): void
 function register_nav_menus(array $locations = []): void
 {
     // Not modelled.
+}
+
+// Posts and attachments.  WP_Query models only what PostBatches relies
+// on: the `posts_where` filter (whose `ID > n` clause it reads back, as
+// MySQL would), ordering by ID and a page size.
+
+class WP_Post
+{
+    public function __construct(
+        public int $ID,
+        public string $post_type,
+        public string $post_status,
+    ) {}
+}
+
+class WP_Query
+{
+    /**
+     * @param array<string, mixed> $args
+     *
+     * @return list<WP_Post>
+     */
+    public function query(array $args): array
+    {
+        $where = apply_filters('posts_where', '', $this);
+        $after = preg_match('/\\.ID > (\\d+)/', $where, $m) === 1 ? (int) $m[1] : 0;
+        $limit = (int) $args['posts_per_page'];
+        WordPress::$queries[] = ['blog' => WordPress::$blogId, 'after' => $after, 'limit' => $limit];
+
+        $types = (array) $args['post_type'];
+        $statuses = (array) $args['post_status'];
+        $posts = [];
+        $ids = array_keys(WordPress::$posts[WordPress::$blogId] ?? []);
+        sort($ids);
+
+        foreach ($ids as $id) {
+            $post = WordPress::$posts[WordPress::$blogId][$id];
+            $typeMatches = $types === ['any'] || in_array($post['post_type'], $types, true);
+            // 'any' leaves out the trash, as in Core.
+            $statusMatches = $statuses === ['any']
+                ? $post['post_status'] !== 'trash'
+                : in_array($post['post_status'], $statuses, true);
+
+            if ($id > $after && $typeMatches && $statusMatches) {
+                $posts[] = new WP_Post($id, $post['post_type'], $post['post_status']);
+            }
+
+            if (count($posts) === $limit) {
+                break;
+            }
+        }
+
+        return $posts;
+    }
+}
+
+function get_attached_file(int $id): string|false
+{
+    return WordPress::$posts[WordPress::$blogId][$id]['file'] ?? false;
+}
+
+function get_post_status(int $id): string|false
+{
+    return WordPress::$posts[WordPress::$blogId][$id]['post_status'] ?? false;
+}
+
+/**
+ * As for an attachment: trashed when MEDIA_TRASH is on, deleted otherwise.
+ */
+function wp_delete_post(int $id, bool $force_delete = false): WP_Post|false|null
+{
+    $post = WordPress::$posts[WordPress::$blogId][$id] ?? null;
+    if ($post === null) {
+        return false;
+    }
+
+    if (!$force_delete && WordPress::$mediaTrash) {
+        WordPress::$posts[WordPress::$blogId][$id]['post_status'] = 'trash';
+    } else {
+        unset(WordPress::$posts[WordPress::$blogId][$id]);
+    }
+
+    return new WP_Post($id, $post['post_type'], $post['post_status']);
+}
+
+function wp_defer_term_counting(?bool $defer = null): bool
+{
+    if ($defer !== null) {
+        WordPress::$termCountingDeferred = $defer;
+    }
+
+    return WordPress::$termCountingDeferred;
+}
+
+function wp_cache_supports(string $feature): bool
+{
+    return $feature === 'flush_runtime';
+}
+
+function wp_cache_flush_runtime(): bool
+{
+    WordPress::$cacheFlushes++;
+
+    return true;
+}
+
+function wp_cache_flush(): bool
+{
+    WordPress::$cacheFlushes++;
+
+    return true;
+}
+
+function wp_using_ext_object_cache(): bool
+{
+    return false;
+}
+
+function __return_true(): bool
+{
+    return true;
 }
 
 // Misc.
