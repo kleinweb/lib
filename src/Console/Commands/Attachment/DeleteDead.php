@@ -7,24 +7,50 @@ declare(strict_types=1);
 
 namespace Kleinweb\Lib\Console\Commands\Attachment;
 
-use Alley\WP_Bulk_Task\Bulk_Task;
-use Alley\WP_Bulk_Task\Bulk_Task_Side_Effects;
 use Illuminate\Console\Command;
+use Kleinweb\Lib\Console\Concerns\InteractsWithSites;
+use Kleinweb\Lib\Database\Batch\MemoryCursor;
+use Kleinweb\Lib\Database\Batch\OptionCursor;
+use Kleinweb\Lib\Database\Batch\PostBatches;
+use Kleinweb\Lib\Database\Models\Site;
+use WP_Post;
+
+use function file_exists;
+use function get_attached_file;
+use function get_post_status;
+use function is_multisite;
+use function is_string;
+use function sprintf;
+use function wp_delete_post;
 
 /**
  * Delete attachments whose file is missing from the filesystem.
+ *
+ * Resumable: where each site's run got to is kept in an option, so an
+ * interrupted run carries on from there.  On multisite, every site is
+ * checked unless `--sites` or `--skip-sites` narrows it.
  */
 final class DeleteDead extends Command
 {
-    use Bulk_Task_Side_Effects;
+    use InteractsWithSites;
+
+    /**
+     * Where each site's run got to.  The name is the one Alley's
+     * wp-bulk-task used, so a run interrupted before the switch resumes.
+     */
+    public const string CURSOR_OPTION = 'bt_attachment-delete-dead';
 
     /**
      * The name and signature of the console command.
      *
      * @var string
      */
-    // phpcs:ignore SlevomatCodingStandard.Files.LineLength.LineTooLong
-    protected $signature = 'app:attachment:delete-dead {--dry-run} {--from-scratch} {--rewind}';
+    protected $signature = 'app:attachment:delete-dead
+        {--dry-run : Report what would be deleted without deleting it}
+        {--from-scratch : Start from the first attachment instead of resuming}
+        {--rewind : Only reset where the next run starts}
+        {--sites=* : Only these site keys (multisite)}
+        {--skip-sites=* : Skip these site keys (multisite)}';
 
     /**
      * The console command description.
@@ -34,72 +60,128 @@ final class DeleteDead extends Command
     protected $description = 'Delete attachments whose file is missing from the filesystem';
 
     /**
-     * Delete dead attachments.
-     *
-     * ## OPTIONS
-     *
-     * [--dry-run]
-     * : Run the command without making any changes.
-     *
-     * [--from-scratch]
-     * : Run the bulk task from scratch.
-     *
-     * [--rewind]
-     * : Resets the cursor so the next time the command is run it will start from the beginning.
+     * @var array{checked: int, missing: int, unrecorded: int, deleted: int, trashed: int, failed: int}
      */
-    public function handle(): void
+    private array $counts;
+
+    public function handle(): int
     {
-        $dryRun = $this->option('dry-run');
-        $fromScratch = $this->option('from-scratch');
-        $rewind = $this->option('rewind');
+        if (!is_multisite()) {
+            return $this->checkSite();
+        }
 
-        $dryRunPrefix = $dryRun ? '[DRY-RUN]' : '';
+        return $this->forEachSite(
+            fn (Site $site): int => $this->checkSite($site),
+            contentTypes: false,
+        );
+    }
 
-        $bulkTask = new Bulk_Task('attachment-delete-dead');
+    /**
+     * Check the current blog's attachments.
+     */
+    private function checkSite(?Site $site = null): int
+    {
+        $label = ($site !== null) ? "{$this->siteLabel($site)}: " : '';
+        $stored = new OptionCursor(self::CURSOR_OPTION);
 
-        if ($rewind) {
-            $bulkTask->cursor->reset();
-            // phpcs:ignore SlevomatCodingStandard.Files.LineLength.LineTooLong
-            $this->alert('Rewound the cursor. Run again without the --rewind flag to process posts.');
+        if ($this->option('rewind')) {
+            $stored->reset();
+            $this->components->info(
+                "{$label}Rewound. The next run starts from the first attachment.",
+            );
+
+            return self::SUCCESS;
+        }
+
+        if ($this->option('from-scratch')) {
+            $stored->reset();
+        }
+
+        $dryRun = (bool) $this->option('dry-run');
+
+        // A dry run reads from the stored cursor but never moves it, so the
+        // real run after it still checks everything.
+        $cursor = $dryRun ? new MemoryCursor($stored->get()) : $stored;
+
+        $this->counts = [
+            'checked' => 0,
+            'missing' => 0,
+            'unrecorded' => 0,
+            'deleted' => 0,
+            'trashed' => 0,
+            'failed' => 0,
+        ];
+
+        PostBatches::query(['post_type' => 'attachment', 'post_status' => 'any'])
+            ->resumeFrom($cursor)
+            ->lazy()
+            ->each(fn (WP_Post $attachment) => $this->check($attachment, $dryRun))
+        ;
+
+        $this->summarize($label, $dryRun);
+
+        return ($this->counts['failed'] === 0) ? self::SUCCESS : self::FAILURE;
+    }
+
+    private function check(WP_Post $attachment, bool $dryRun): void
+    {
+        $this->counts['checked']++;
+        $file = get_attached_file($attachment->ID);
+
+        if (!is_string($file) || $file === '') {
+            $this->counts['unrecorded']++;
+            $this->components->warn("Attachment {$attachment->ID} has no file recorded; skipped.");
 
             return;
         }
 
-        if ($fromScratch) {
-            $bulkTask->cursor->reset();
+        if (file_exists($file)) {
+            return;
         }
 
-        $this->pause_side_effects();
+        $this->counts['missing']++;
 
-        $bulkTask->run(
-            [
-                'post_status' => 'any',
-                'post_type' => 'attachment',
-            ],
-            function ($it) use ($dryRun, $dryRunPrefix) {
-                $file = get_attached_file($it->ID);
+        if ($dryRun) {
+            $this->line("Would delete attachment {$attachment->ID} ({$file})");
 
-                if (!$file) {
-                    // phpcs:ignore SlevomatCodingStandard.Files.LineLength.LineTooLong -- Log message string.
-                    $this->warn("Attachment {$it->ID} does not have a corresponding file! Skipping...");
+            return;
+        }
 
-                    return;
-                }
+        // Moves it to the trash when MEDIA_TRASH is on, deletes it otherwise.
+        if (!wp_delete_post($attachment->ID, force_delete: false)) {
+            $this->counts['failed']++;
+            $this->components->error("Could not delete attachment {$attachment->ID}.");
 
-                if (file_exists($file)) {
-                    return;
-                }
+            return;
+        }
 
-                $this->line("{$dryRunPrefix} Deleting dead attachment {$it->ID}");
+        $trashed = get_post_status($attachment->ID) === 'trash';
+        $this->counts[$trashed ? 'trashed' : 'deleted']++;
+        $this->line(sprintf(
+            '%s attachment %d (%s)',
+            $trashed ? 'Trashed' : 'Deleted',
+            $attachment->ID,
+            $file,
+        ));
+    }
 
-                if (! $dryRun) {
-                    wp_delete_post($it->ID, force_delete: false);
-                }
-            },
-        );
+    private function summarize(string $label, bool $dryRun): void
+    {
+        $counts = $this->counts;
 
-        $this->resume_side_effects();
-
-        $this->info("{$dryRunPrefix} Done.");
+        $this->components->info(sprintf(
+            '%s%s%d checked, %d with a missing file%s, %d with no file recorded.',
+            $dryRun ? '[DRY-RUN] ' : '',
+            $label,
+            $counts['checked'],
+            $counts['missing'],
+            $dryRun ? '' : sprintf(
+                ' (%d deleted, %d trashed, %d failed)',
+                $counts['deleted'],
+                $counts['trashed'],
+                $counts['failed'],
+            ),
+            $counts['unrecorded'],
+        ));
     }
 }
