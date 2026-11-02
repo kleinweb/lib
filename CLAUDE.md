@@ -51,13 +51,6 @@ are namespaced functions in `tests/Support/helpers.php`. `examples/multisite/`
 is the fixture; its classes are in `autoload-dev`, so changing the example can
 break tests. PHPStan analyses `tests/Support/` but not the Pest files.
 
-Pest's Composer plugin (`pestphp/pest-plugin`) is disabled in `allow-plugins`:
-`alleyinteractive/composer-wordpress-autoloader` loads the project autoloader
-into Composer's process, and the two Symfony Console versions then collide.
-`.config/pest-plugins.php` writes `vendor/pest-plugins.json` from
-`post-autoload-dump` instead; without that file Pest runs without its own
-plugins (printer, coverage, parallel).
-
 ## Architecture
 
 ### Application & Service Providers
@@ -104,6 +97,13 @@ for package registration.
 `Database\Models\Model` is an abstract base for WordPress entity wrappers,
 requiring `find()` and `newFromExisting()` methods. `User` is the concrete
 implementation for WordPress users.
+
+`Database\Batch\PostBatches` walks every post matching a `WP_Query` as a
+`LazyCollection`, in ID order, a batch at a time (keyset pagination). A
+`Batch\Cursor` records the last ID finished after each batch, so a stopped
+run resumes; `OptionCursor` keeps it in a per-blog option. Between batches it
+empties the query log and the in-memory object cache. It replaces Alley's
+wp-bulk-task; `app:attachment:delete-dead` uses it.
 
 ### Tenancy/Multisite
 

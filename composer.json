@@ -23,7 +23,6 @@
   ],
   "require": {
     "php": "^8.3",
-    "alleyinteractive/wp-bulk-task": "^1.0",
     "archtechx/enums": "^1.1",
     "johnbillion/extended-cpts": "^5.0",
     "league/uri": "^7.0",
@@ -52,10 +51,9 @@
   },
   "config": {
     "allow-plugins": {
-      "alleyinteractive/composer-wordpress-autoloader": true,
       "composer/installers": true,
       "dealerdirect/phpcodesniffer-composer-installer": true,
-      "pestphp/pest-plugin": false,
+      "pestphp/pest-plugin": true,
       "phpstan/extension-installer": true
     },
     "lock": false,
@@ -106,9 +104,6 @@
     "check": ["@check-syntax .", "@php-cs-fixer check", "@phpcs", "@phpstan", "@test"],
     "lint": ["@check-syntax", "@phpcs", "@phpstan"],
     "fix": ["@php-cs-fixer fix", "@phpcbf"],
-    "post-autoload-dump": [
-      "Roots\\Acorn\\ComposerScripts::postAutoloadDump",
-      "@php .config/pest-plugins.php"
-    ]
+    "post-autoload-dump": ["Roots\\Acorn\\ComposerScripts::postAutoloadDump"]
   }
 }
