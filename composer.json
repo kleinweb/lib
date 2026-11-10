@@ -25,6 +25,8 @@
     "php": "~8.4",
     "alleyinteractive/wp-bulk-task": "^1.0",
     "archtechx/enums": "^1.1",
+    "johnbillion/args": "^2.6",
+    "johnbillion/extended-cpts": "^5.1",
     "league/uri": "^7.0",
     "league/uri-components": "^7.0",
     "monolog/monolog": "^3.9",
