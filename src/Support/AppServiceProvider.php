@@ -8,7 +8,6 @@ declare(strict_types=1);
 namespace Kleinweb\Lib\Support;
 
 use Illuminate\Support\Facades\Request;
-use Kleinweb\Lib\Console\Commands\Attachment\DeleteDead as DeleteDeadAttachments;
 use Kleinweb\Lib\Console\Commands\Tenancy\DemapDomains;
 use Kleinweb\Lib\Hooks\Attributes\Action;
 use Kleinweb\Lib\Hooks\Attributes\Filter;
@@ -28,7 +27,6 @@ abstract class AppServiceProvider extends ServiceProviderBase
         }
 
         $this->commands([
-            DeleteDeadAttachments::class,
             DemapDomains::class,
         ]);
     }
